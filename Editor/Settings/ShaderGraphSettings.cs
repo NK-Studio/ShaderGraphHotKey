@@ -70,7 +70,7 @@ public class ShaderGraphSettings : EditorWindow
         // Import UXML
         VisualTreeAsset visualTree =
             AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
-                "Assets/ShaderGraphShotKey/Editor/Settings/ShaderGraphSettings.uxml");
+                "Assets/ShaderGraphHotKey/Editor/Settings/ShaderGraphSettings.uxml");
         VisualElement container = visualTree.Instantiate();
         root.Add(container);
 
