@@ -271,57 +271,72 @@ public class ShaderGraphSettings : EditorWindow
 
     private static void AddHotKeyHintToNode(DirectoryInfo shaderGraphPackage)
     {
+        //키보드 패스
         const string kDefaultKey = "<Keyboard>/";
+        
+        //인풋 액션파일이 있는지 찾습니다.
         InputActionAsset inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(NodeAssetPath);
 
-        Dictionary<string, string> hasHotKeyNodes = new Dictionary<string, string>();
+        //단축키가 있는 노드를 모아놓은 곳입니다.
+        var hasHotKeyNodes = new Dictionary<string, string>();
 
+        //단축키가 있는 것을 체크합니다.
         foreach (InputActionMap actionMap in inputActionAsset.actionMaps)
         foreach (InputAction action in actionMap.actions)
         foreach (InputBinding binding in action.bindings.Where(binding => binding.path.Length != 0))
             hasHotKeyNodes.Add(action.name, binding.path);
 
+        //단축키가 없으면 여기서 스톱
         if (hasHotKeyNodes.Count == 0) return;
 
-
-        foreach (KeyValuePair<string, string> hasHotKeyNode in hasHotKeyNodes)
+        //단축키가 있는 노드들을 모두 순례를 돕니다.
+        foreach (var hasHotKeyNode in hasHotKeyNodes)
         {
-            string[] guidByNode = AssetDatabase.FindAssets(hasHotKeyNode.Key,
+            //노드 이름으로 CS파일의 GUID를 찾습니다.
+            string[] guidByNodes = AssetDatabase.FindAssets(hasHotKeyNode.Key,
                 new[] {"Packages/com.unity.shadergraph/Editor/Data/Nodes"});
 
-            if (guidByNode.Length > 1)
-            {
-                foreach (string s in guidByNode)
-                {
-                    Debug.Log(s);
-                }
-            }
-            
             //노드 파일의 경로를 가져옵니다.
-            string nodePath = AssetDatabase.GUIDToAssetPath(guidByNode[0]);
+
+            string nodePath = string.Empty;
+
+            //찾은 CS파일을 한번 필터링 합니다.
+            foreach (string guidByNode in guidByNodes)
+            {
+                string realPath = AssetDatabase.GUIDToAssetPath(guidByNode);
+
+                int startSplit = realPath.LastIndexOf("/", StringComparison.Ordinal);
+                string formatText = realPath[startSplit..].Replace("/", "").Replace(".cs", "");
+                if (!formatText.Equals(hasHotKeyNode.Key)) continue;
+                nodePath = realPath;
+                break;
+            }
+
+            Assert.IsTrue(nodePath != string.Empty,"304번 코드에 문제가 발생했습니다.");
             
             //단축키를 표시합니다.
             string hotKey = hasHotKeyNode.Value.Replace(kDefaultKey, "").ToUpper();
-            
+
             //전체 코드를 가져옵니다.
             string text = File.ReadAllText(nodePath);
-            
+
             //코드를 라인별로 자릅니다.
             string[] codeLines = text.Split('\r', '\n');
-            
+
             //라인별로 순례를 돕니다.
             foreach (string codeLine in codeLines)
             {
                 //해당 라인에 타이틀이 없으면 무시합니다.
                 if (!codeLine.Contains("[Title(")) continue;
-                
+
                 int startIndex = codeLine.IndexOf("\")]", StringComparison.Ordinal);
                 string afterTitleLine = codeLine.Insert(startIndex, $" ({hotKey})");
                 text = text.Replace(codeLine, afterTitleLine);
                 break;
             }
 
-            File.WriteAllText(nodePath, text);
+            Debug.Log(nodePath);
+            //File.WriteAllText(nodePath, text);
         }
     }
 
