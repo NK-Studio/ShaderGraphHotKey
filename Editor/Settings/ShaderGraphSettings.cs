@@ -254,7 +254,6 @@ public class ShaderGraphSettings : EditorWindow
                 "m_InspectorView.InitializeGraphSettings();\n\t\t\t\tkeyboardCallback?.Invoke(graphView, graph);");
 
         File.WriteAllText(filePath, text);
-        AssetDatabase.Refresh();
     }
 
     private static DirectoryInfo GetPackageInstalled(string packageName)
@@ -334,9 +333,7 @@ public class ShaderGraphSettings : EditorWindow
                 text = text.Replace(codeLine, afterTitleLine);
                 break;
             }
-
-            Debug.Log(nodePath);
-            //File.WriteAllText(nodePath, text);
+            File.WriteAllText(nodePath, text);
         }
     }
 
