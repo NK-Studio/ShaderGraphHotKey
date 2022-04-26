@@ -74,11 +74,11 @@ public class ShaderGraphSettings : EditorWindow
         VisualElement container = visualTree.Instantiate();
         root.Add(container);
 
+        Button create_btn = root.Q<Button>("create-btn");
         Button change_btn = root.Q<Button>("unity-change-btn");
         Button change_btn2 = root.Q<Button>("unity-change2-btn");
         Button add_Define_btn = root.Q<Button>("unity-add-define");
         Button apply_btn = root.Q<Button>("unity-apply-btn");
-        Button create_btn = root.Q<Button>("create-btn");
         ObjectField inputActionField = root.Q<ObjectField>("inputAction-field");
         inputActionField.objectType = typeof(InputActionAsset);
         inputActionField.allowSceneObjects = false;
@@ -289,24 +289,34 @@ public class ShaderGraphSettings : EditorWindow
             string[] guidByNode = AssetDatabase.FindAssets(hasHotKeyNode.Key,
                 new[] {"Packages/com.unity.shadergraph/Editor/Data/Nodes"});
 
+            if (guidByNode.Length > 1)
+            {
+                foreach (string s in guidByNode)
+                {
+                    Debug.Log(s);
+                }
+            }
+            
+            //노드 파일의 경로를 가져옵니다.
             string nodePath = AssetDatabase.GUIDToAssetPath(guidByNode[0]);
-
-            FileInfo file = new(nodePath);
-
-            Assert.IsTrue(file.Exists, $"{hasHotKeyNode.Key}.cs이 존재하지 않습니다.");
-
+            
+            //단축키를 표시합니다.
+            string hotKey = hasHotKeyNode.Value.Replace(kDefaultKey, "").ToUpper();
+            
             //전체 코드를 가져옵니다.
             string text = File.ReadAllText(nodePath);
-
+            
+            //코드를 라인별로 자릅니다.
             string[] codeLines = text.Split('\r', '\n');
-
-            string hotKey = hasHotKeyNode.Value.Replace(kDefaultKey, "");
-
+            
+            //라인별로 순례를 돕니다.
             foreach (string codeLine in codeLines)
             {
+                //해당 라인에 타이틀이 없으면 무시합니다.
                 if (!codeLine.Contains("[Title(")) continue;
+                
                 int startIndex = codeLine.IndexOf("\")]", StringComparison.Ordinal);
-                string afterTitleLine = codeLine.Insert(startIndex, $" ({hotKey.ToUpper()})");
+                string afterTitleLine = codeLine.Insert(startIndex, $" ({hotKey})");
                 text = text.Replace(codeLine, afterTitleLine);
                 break;
             }
