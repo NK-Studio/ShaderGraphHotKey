@@ -3,24 +3,34 @@
         <ui:VisualElement name="icon" style="background-image: url(&apos;project://database/Assets/ShaderGraphHotKey/Icon/shift.png?fileID=2800000&amp;guid=c0c93ba1ca8a49f4e8e86da7ecf6f69a&amp;type=3#shift&apos;); width: 32px; height: 35px; -unity-background-scale-mode: scale-to-fit; margin-left: 6px; margin-right: 6px; margin-top: 6px; margin-bottom: 6px;" />
         <ui:Label text="ShaderGraph Hot Key" display-tooltip-when-elided="true" style="font-size: 21px; -unity-text-align: middle-center; margin-top: 10px; margin-bottom: 10px;" />
     </ui:VisualElement>
-    <ui:VisualElement name="SettingsField" style="flex-direction: row; justify-content: space-between;">
-        <uie:ObjectField label="Settings" name="settings-field" style="flex-shrink: 1; margin-right: 0;" />
-        <ui:Button text="Create" display-tooltip-when-elided="true" name="create-settings-btn" />
-    </ui:VisualElement>
-    <ui:VisualElement name="InputActionField" style="flex-direction: row;">
-        <uie:ObjectField label="InputAction" name="inputAction-field" style="flex-shrink: 1; margin-right: 0;" />
-        <ui:Button text="Create" display-tooltip-when-elided="true" name="create-inputAction-btn" />
-    </ui:VisualElement>
-    <ui:VisualElement name="Buttons" style="margin-top: 8px;">
-        <ui:Button text="Add Settings" display-tooltip-when-elided="true" name="add-settings-btn" style="height: 31px; font-size: 18px;" />
-        <ui:Button text="Hot Key Code Patch - 1" display-tooltip-when-elided="true" name="override-1-btn" style="height: 31px; font-size: 18px;" />
-        <ui:Button text="Add Define" display-tooltip-when-elided="true" name="add-define" style="height: 31px; font-size: 18px;" />
-        <ui:Button text="Add InputAction" display-tooltip-when-elided="true" name="add-inputAction" style="height: 31px; font-size: 18px;" />
-        <ui:Button text="Hot Key Code Patch - 2" display-tooltip-when-elided="true" name="override-2-btn" style="height: 31px; font-size: 18px;" />
-    </ui:VisualElement>
-    <ui:VisualElement style="height: 131px; flex-direction: column; margin-bottom: 5px; margin-left: 2px; justify-content: flex-end; align-items: stretch; flex-wrap: nowrap;">
-        <ui:Toggle label="Auto Shader Graph Override" name="auto-override" style="justify-content: center; align-items: stretch; flex-direction: row; flex-wrap: nowrap;" />
-        <uie:EnumField label="Language" name="language-field" />
-        <ui:DropdownField label="Start At Show" index="-1" name="startAtShow-field" />
+    <ui:VisualElement style="width: 100%; height: 100%; align-items: stretch; justify-content: flex-start;">
+        <ui:VisualElement>
+            <ui:VisualElement name="InputActionField" style="flex-direction: row;">
+                <uie:ObjectField label="InputAction" name="inputAction-field" style="flex-shrink: 1; margin-right: 0;" />
+                <ui:Button text="Create" display-tooltip-when-elided="true" name="create-inputAction-btn" />
+            </ui:VisualElement>
+            <ui:VisualElement name="SettingsField" style="flex-direction: row; justify-content: space-between;">
+                <uie:ObjectField label="Settings" name="settings-field" style="flex-shrink: 1; margin-right: 0;" />
+                <ui:Button text="Create" display-tooltip-when-elided="true" name="create-settings-btn" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement style="align-items: center; justify-content: center;">
+            <ui:VisualElement style="background-color: rgb(38, 38, 38); width: 319px; height: 2px; margin-top: 6px; margin-bottom: 6px;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="Buttons" style="margin-top: 8px;">
+            <ui:Button text="Add Settings" display-tooltip-when-elided="true" name="add-settings-btn" style="height: 31px; font-size: 18px;" />
+            <ui:Button text="Hot Key Code Patch - 1" display-tooltip-when-elided="true" name="override-1-btn" style="height: 31px; font-size: 18px;" />
+            <ui:Button text="Add Define" display-tooltip-when-elided="true" name="add-define" style="height: 31px; font-size: 18px;" />
+            <ui:Button text="Add InputAction" display-tooltip-when-elided="true" name="add-inputAction" style="height: 31px; font-size: 18px;" />
+            <ui:Button text="Hot Key Code Patch - 2" display-tooltip-when-elided="true" name="override-2-btn" style="height: 31px; font-size: 18px;" />
+        </ui:VisualElement>
+        <ui:VisualElement style="align-items: center; justify-content: center;">
+            <ui:VisualElement style="background-color: rgb(38, 38, 38); width: 319px; height: 2px; margin-top: 6px; margin-bottom: 6px;" />
+        </ui:VisualElement>
+        <ui:VisualElement style="width: 331px;">
+            <ui:Toggle label="Auto Shader Graph Override" name="auto-override" />
+            <uie:EnumField label="Language" name="language-field" />
+            <ui:DropdownField label="Start At Show" index="-1" name="startAtShow-field" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

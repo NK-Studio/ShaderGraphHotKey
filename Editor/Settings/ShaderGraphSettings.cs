@@ -25,7 +25,7 @@ namespace ShaderGraphShotKey.Editor.Settings
 
         private const string HotKeyDefine = "SHADER_GRAPH_HOTKEY";
 
-        private ShaderGraphHotKeySettings settings;
+        private ShaderGraphHotKeySettings _settings;
 
         private InputActionAsset _inputActionAsset;
 
@@ -34,8 +34,6 @@ namespace ShaderGraphShotKey.Editor.Settings
         {
             ShaderGraphSettings wnd = GetWindow<ShaderGraphSettings>();
             wnd.titleContent = new GUIContent("ShaderGraphSettings");
-            wnd.minSize = new Vector2(290, 320);
-            wnd.maxSize = new Vector2(380, 320);
         }
 
         [InitializeOnLoadMethod]
@@ -163,11 +161,11 @@ namespace ShaderGraphShotKey.Editor.Settings
                 }
 
                 //변경된 값 적용
-                settings = (ShaderGraphHotKeySettings) evt.newValue;
-                settingsField.value = settings;
+                _settings = (ShaderGraphHotKeySettings) evt.newValue;
+                settingsField.value = _settings;
 
                 //세팅
-                SetUp(settings);
+                SetUp(_settings);
             });
 
             //인풋 액션 필드 변화 체크
@@ -182,10 +180,12 @@ namespace ShaderGraphShotKey.Editor.Settings
 
             patchCodeBtn.RegisterCallback<MouseUpEvent>(_ =>
             {
-                if (settingsField.value == null || settings == null) return;
-                settings.AutoShaderGraphOverride = true;
+                if (settingsField.value == null || _settings == null) return;
+                _settings.AutoShaderGraphOverride = true;
                 autoOverride.value = true;
                 OverridePackage();
+                
+                AssetDatabase.Refresh();
             });
             
             patchHintBtn.RegisterCallback<MouseUpEvent>(_ =>
@@ -193,6 +193,8 @@ namespace ShaderGraphShotKey.Editor.Settings
                 if (inputActionField.value == null || _inputActionAsset == null) return;
 
                 AddHotKeyHintToNode();
+                
+                AssetDatabase.Refresh();
             });
 
             addInputActionBtn.RegisterCallback<MouseUpEvent>(_ =>
@@ -215,11 +217,11 @@ namespace ShaderGraphShotKey.Editor.Settings
 
             languageField.RegisterValueChangedCallback(_ =>
             {
-                if (settingsField.value == null || settings == null) return;
-                settings.Language = (ShaderGraphHotKeySettings.KLanguage) languageField.value;
+                if (settingsField.value == null || _settings == null) return;
+                _settings.Language = (ShaderGraphHotKeySettings.KLanguage) languageField.value;
 
                 //버튼 설정
-                switch (settings.Language)
+                switch (_settings.Language)
                 {
                     case ShaderGraphHotKeySettings.KLanguage.English:
                         createSettingsBtn.text = "Create";
@@ -239,29 +241,29 @@ namespace ShaderGraphShotKey.Editor.Settings
                 startAtShowField.index = -1; //초기화
 
                 //언어 체인지
-                startAtShowField.choices = settings.Language == ShaderGraphHotKeySettings.KLanguage.English
-                    ? settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.English]
-                    : settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.한국어];
+                startAtShowField.choices = _settings.Language == ShaderGraphHotKeySettings.KLanguage.English
+                    ? _settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.English]
+                    : _settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.한국어];
 
-                startAtShowField.index = (int) settings.StartAtShow; //다시 설정
+                startAtShowField.index = (int) _settings.StartAtShow; //다시 설정
             });
 
             startAtShowField.RegisterValueChangedCallback(_ =>
             {
-                if (settingsField.value == null || settings == null) return;
-                settings.StartAtShow = (ShaderGraphHotKeySettings.KStartUp) startAtShowField.index;
+                if (settingsField.value == null || _settings == null) return;
+                _settings.StartAtShow = (ShaderGraphHotKeySettings.KStartUp) startAtShowField.index;
             });
 
             autoOverride.RegisterValueChangedCallback(evt =>
             {
                 //체크 안되도록 막음
-                if (settingsField.value == null || settings == null)
+                if (settingsField.value == null || _settings == null)
                 {
                     autoOverride.value = false;
                     return;
                 }
 
-                settings.AutoShaderGraphOverride = evt.newValue;
+                _settings.AutoShaderGraphOverride = evt.newValue;
             });
 
             void InitSetUp()
@@ -287,21 +289,21 @@ namespace ShaderGraphShotKey.Editor.Settings
                     }
 
                     settingsField.value = AssetDatabase.LoadAssetAtPath<ShaderGraphHotKeySettings>(path);
-                    settings = (ShaderGraphHotKeySettings) settingsField.value;
+                    _settings = (ShaderGraphHotKeySettings) settingsField.value;
 
-                    languageField.Init(settings.Language);
+                    languageField.Init(_settings.Language);
 
-                    if (settings.Language == ShaderGraphHotKeySettings.KLanguage.English)
+                    if (_settings.Language == ShaderGraphHotKeySettings.KLanguage.English)
                         startAtShowField.choices =
-                            settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.English];
+                            _settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.English];
                     else
-                        startAtShowField.choices = settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.한국어];
+                        startAtShowField.choices = _settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.한국어];
 
-                    startAtShowField.index = (int) settings.StartAtShow;
+                    startAtShowField.index = (int) _settings.StartAtShow;
 
-                    autoOverride.value = settings.AutoShaderGraphOverride;
+                    autoOverride.value = _settings.AutoShaderGraphOverride;
 
-                    switch (settings.Language)
+                    switch (_settings.Language)
                     {
                         case ShaderGraphHotKeySettings.KLanguage.English:
                             createSettingsBtn.text = "Create";
@@ -391,8 +393,8 @@ namespace ShaderGraphShotKey.Editor.Settings
                 //가지고 있다면 에러 표시
                 if (hasSettingsFile)
                 {
-                    if (settingsField.value == null || settings == null) return;
-                    string warningMsg = settings.Language == ShaderGraphHotKeySettings.KLanguage.English
+                    if (settingsField.value == null || _settings == null) return;
+                    string warningMsg = _settings.Language == ShaderGraphHotKeySettings.KLanguage.English
                         ? "There is already a file in the Settings folder."
                         : "이미 Settings 폴더에 파일이 있습니다.";
                     Debug.LogWarning(warningMsg);
@@ -408,15 +410,15 @@ namespace ShaderGraphShotKey.Editor.Settings
                     Directory.CreateDirectory($"{Application.dataPath}/Settings");
 
                 //스크립터블 생성
-                settings = CreateInstance<ShaderGraphHotKeySettings>();
-                settings.Language = ShaderGraphHotKeySettings.KLanguage.English; //영어로 설정
-                settings.StartAtShow = ShaderGraphHotKeySettings.KStartUp.Always; //컴파일 후 계속 켜짐 설정
-                settings.AutoShaderGraphOverride = false; //초기에는 해제
-                AssetDatabase.CreateAsset(settings, path);
-                settingsField.value = settings;
+                _settings = CreateInstance<ShaderGraphHotKeySettings>();
+                _settings.Language = ShaderGraphHotKeySettings.KLanguage.English; //영어로 설정
+                _settings.StartAtShow = ShaderGraphHotKeySettings.KStartUp.Always; //컴파일 후 계속 켜짐 설정
+                _settings.AutoShaderGraphOverride = false; //초기에는 해제
+                AssetDatabase.CreateAsset(_settings, path);
+                settingsField.value = _settings;
 
                 //파일 위치 저장
-                int id = settings.GetInstanceID();
+                int id = _settings.GetInstanceID();
                 EditorPrefs.SetInt("SGHKSettingsID", id);
                 Debug.Log("생성되었습니다.");
             }
