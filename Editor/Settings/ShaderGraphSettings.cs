@@ -29,7 +29,7 @@ namespace ShaderGraphShotKey.Editor.Settings
 
         private ShaderGraphHotKeySettings settings;
 
-        private InputActionAsset InputActionAsset;
+        private InputActionAsset _inputActionAsset;
 
         [MenuItem("Tools/ShaderGraphSettings")]
         public static void Title()
@@ -164,15 +164,11 @@ namespace ShaderGraphShotKey.Editor.Settings
             //인풋 액션 필드 변화 체크
             inputActionField.RegisterValueChangedCallback(evt =>
             {
-                if (inputActionField.value == null)
-                {
-                    //단축키 제거하는 로직
-                    return;
-                }
-
                 //변경된 값 적용
-                InputActionAsset = (InputActionAsset) evt.newValue;
-                inputActionField.value = settings;
+                if (evt.newValue == null)
+                    _inputActionAsset = null;
+                else
+                    _inputActionAsset = (InputActionAsset) evt.newValue;
             });
 
             patchBtn.RegisterCallback<MouseUpEvent>(_ =>
@@ -181,7 +177,7 @@ namespace ShaderGraphShotKey.Editor.Settings
                 settings.AutoShaderGraphOverride = true;
                 autoOverride.value = true;
                 OverridePackage();
-                
+
                 AddHotKeyHintToNode();
             });
 
@@ -192,7 +188,7 @@ namespace ShaderGraphShotKey.Editor.Settings
 
                 //디파인 설치
                 InstallDefine();
-                
+
                 //새로고침
                 AssetDatabase.Refresh();
             });
@@ -314,7 +310,7 @@ namespace ShaderGraphShotKey.Editor.Settings
                     }
 
                     inputActionField.value = AssetDatabase.LoadAssetAtPath<InputActionAsset>(Actionpath);
-                    InputActionAsset = (InputActionAsset) inputActionField.value;
+                    _inputActionAsset = (InputActionAsset) inputActionField.value;
                 }
             }
 
@@ -427,16 +423,26 @@ namespace ShaderGraphShotKey.Editor.Settings
                 TextAsset json = new TextAsset(kDefaultAssetLayout);
                 File.WriteAllText(path, json.text);
                 AssetDatabase.Refresh();
-
                 //가져오기
-                InputActionAsset inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(path);
-                CreateAllNode(inputActionAsset, path);
-                AssetDatabase.Refresh();
+                _inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(path);
+
+                //스킴 추가
+                var scheme = _inputActionAsset.FindControlScheme("Keyboard");
+                if (scheme == null) _inputActionAsset.AddControlScheme("Keyboard").WithOptionalDevice<Keyboard>();
+
+                //노드 추가
+                CreateAllNode(path);
 
                 //파일 위치 저장
-                int id = inputActionAsset.GetInstanceID();
+                int id = _inputActionAsset.GetInstanceID();
                 EditorPrefs.SetInt("SGHKInputActionID", id);
-                inputActionField.value = inputActionAsset;
+
+                //바인딩
+                inputActionField.value = _inputActionAsset;
+
+                //새로고침
+                AssetDatabase.Refresh();
+
                 Debug.Log("생성되었습니다.");
             }
 
@@ -481,18 +487,20 @@ namespace ShaderGraphShotKey.Editor.Settings
                     "m_InspectorView.InitializeGraphSettings();\n\t\t\t\tkeyboardCallback?.Invoke(graphView, graph);");
 
             File.WriteAllText(filePath, text);
-            //AddHotKeyHintToNode(shaderGraphPackage);
         }
 
         //인풋에셋에 노드를 세팅합니다.
-        private void CreateAllNode(InputActionAsset inputActionAsset, string path)
+        private void CreateAllNode(string path)
         {
 #if SHADER_GRAPH_HOTKEY
-            IEnumerable<Type> types = Assembly.GetAssembly(typeof(AbstractMaterialNode)).GetTypes()
+            //AbstractMaterialNode을 상속받는 클래스 타입 모두 가져오기
+            var types = Assembly.GetAssembly(typeof(AbstractMaterialNode)).GetTypes()
                 .Where(t => t.IsSubclassOf(typeof(AbstractMaterialNode)));
 
+            //타입별로 전부 순례한다.
             foreach (Type type in types)
             {
+                //해당 타입들의 타이틀 어트리뷰트를 체크
                 Attribute attribute = Attribute.GetCustomAttribute(type, typeof(TitleAttribute));
                 TitleAttribute titleAttribute = (TitleAttribute) attribute;
 
@@ -503,24 +511,29 @@ namespace ShaderGraphShotKey.Editor.Settings
                 else
                     continue;
 
-                if (inputActionAsset.FindActionMap(category) == null)
-                    inputActionAsset.AddActionMap(category);
+                //인풋 액션 에셋에 해당 카테고리 이름으로 액션맵이 없으면 생성
+                if (_inputActionAsset.FindActionMap(category) == null)
+                    _inputActionAsset.AddActionMap(category);
 
+                //기본 세팅 단축키 적용
                 string keyboardPath = DefaultSetKeyPath(type);
 
-                inputActionAsset.FindActionMap(category).AddAction(name: type.Name, type: InputActionType.Button)
+                //단축키가 적용된 상태로 바인딩 처리
+                _inputActionAsset.FindActionMap(category).AddAction(name: type.Name, type: InputActionType.Button)
                     .AddBinding(path: keyboardPath, groups: "Keyboard");
             }
 
-            string data = inputActionAsset.ToJson();
+            //저장
+            string data = _inputActionAsset.ToJson();
+
             File.WriteAllText(path, data);
 #endif
         }
 
         private string DefaultSetKeyPath(Type nodeType)
         {
-#if SHADER_GRAPH_HOTKEY
             string keyboardPath = string.Empty;
+#if SHADER_GRAPH_HOTKEY
             const string kDefaultKey = "<Keyboard>";
 
             switch (nodeType)
@@ -582,12 +595,12 @@ namespace ShaderGraphShotKey.Editor.Settings
                 case var type when type == typeof(DotProductNode):
                     keyboardPath = $"{kDefaultKey}/.";
                     break;
+                default:
+                    keyboardPath = string.Empty;
+                    break;
             }
-
-            return keyboardPath;
-#else
-            return string.Empty;
 #endif
+            return keyboardPath;
         }
 
         private static DirectoryInfo GetPackageInstalled(string packageName)
