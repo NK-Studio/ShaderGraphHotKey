@@ -50,8 +50,18 @@ namespace ShaderGraphShotKey.Editor.Settings
             {
                 //기존에 있는 세팅 데이터를 기반으로 오픈합니다.
                 string path = AssetDatabase.GetAssetPath(settingsId);
+                
                 ShaderGraphHotKeySettings temporarySettings =
                     AssetDatabase.LoadAssetAtPath<ShaderGraphHotKeySettings>(path);
+
+                //없는 상태이다.
+                if (temporarySettings == null)
+                {
+                    EditorApplication.update += ShowAtStartup;
+                    EditorPrefs.SetInt("SGHKSettingsID", -1);
+                    return;
+                }
+                
                 bool showOnStartup = temporarySettings.StartAtShow == ShaderGraphHotKeySettings.KStartUp.Always;
 
                 if (showOnStartup)
