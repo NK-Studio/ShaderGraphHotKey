@@ -193,7 +193,7 @@ namespace ShaderGraphShotKey.Editor.Settings
                 if (inputActionField.value == null || _inputActionAsset == null) return;
 
                 AddHotKeyHintToNode();
-                
+                OverridePackage();//<-풀려버리는 문제가 있어서 한번 더 넣습니다.
                 AssetDatabase.Refresh();
             });
 
@@ -679,7 +679,7 @@ namespace ShaderGraphShotKey.Editor.Settings
 
                 File.WriteAllText(nodePath, text);
             }
-
+            
             Debug.Log("단축키 힌트 적용 완료");
         }
     }
