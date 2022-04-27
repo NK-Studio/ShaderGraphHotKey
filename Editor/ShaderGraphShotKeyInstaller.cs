@@ -54,8 +54,8 @@ namespace ShaderGraphShotKey.Editor
         
         private static void Run()
         {
-            Debug.Log("동작 중");
 #if SHADER_GRAPH_HOTKEY
+            Debug.Log("동작 중");
             UnityEditor.ShaderGraph.Drawing.GraphEditorView.keyboardCallback += ((view, data) =>
             {
                 KeyboardHotKey keyboardHotKey = new KeyboardHotKey(view, data);

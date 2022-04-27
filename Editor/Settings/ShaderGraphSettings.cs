@@ -108,7 +108,8 @@ namespace ShaderGraphShotKey.Editor.Settings
             Button createInputActionBtn = root.Q<Button>("create-inputAction-btn");
             Button createSettingsBtn = root.Q<Button>("create-settings-btn");
             Button patchBtn = root.Q<Button>("override-btn");
-            Button addInputActionDefineBtn = root.Q<Button>("add-inputAction-define");
+            Button addInputActionBtn = root.Q<Button>("add-inputAction");
+            Button addDefineBtn = root.Q<Button>("add-define");
 
             #endregion
 
@@ -188,11 +189,17 @@ namespace ShaderGraphShotKey.Editor.Settings
                 AddHotKeyHintToNode();
             });
 
-            addInputActionDefineBtn.RegisterCallback<MouseUpEvent>(_ =>
+            addInputActionBtn.RegisterCallback<MouseUpEvent>(_ =>
             {
                 //인풋 액션 설치
                 CreateInputAction();
-
+                
+                //새로고침
+                AssetDatabase.Refresh();
+            });
+            
+            addDefineBtn.RegisterCallback<MouseUpEvent>(_ =>
+            {
                 //디파인 설치
                 InstallDefine();
 
