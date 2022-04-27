@@ -107,7 +107,8 @@ namespace ShaderGraphShotKey.Editor.Settings
             Button addSettingsBtn = root.Q<Button>("add-settings-btn");
             Button createInputActionBtn = root.Q<Button>("create-inputAction-btn");
             Button createSettingsBtn = root.Q<Button>("create-settings-btn");
-            Button patchBtn = root.Q<Button>("override-btn");
+            Button patchCodeBtn = root.Q<Button>("override-1-btn");
+            Button patchHintBtn = root.Q<Button>("override-2-btn");
             Button addInputActionBtn = root.Q<Button>("add-inputAction");
             Button addDefineBtn = root.Q<Button>("add-define");
 
@@ -179,12 +180,17 @@ namespace ShaderGraphShotKey.Editor.Settings
                     _inputActionAsset = (InputActionAsset) evt.newValue;
             });
 
-            patchBtn.RegisterCallback<MouseUpEvent>(_ =>
+            patchCodeBtn.RegisterCallback<MouseUpEvent>(_ =>
             {
                 if (settingsField.value == null || settings == null) return;
                 settings.AutoShaderGraphOverride = true;
                 autoOverride.value = true;
                 OverridePackage();
+            });
+            
+            patchHintBtn.RegisterCallback<MouseUpEvent>(_ =>
+            {
+                if (inputActionField.value == null || _inputActionAsset == null) return;
 
                 AddHotKeyHintToNode();
             });

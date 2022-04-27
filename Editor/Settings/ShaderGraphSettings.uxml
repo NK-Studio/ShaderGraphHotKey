@@ -13,9 +13,10 @@
     </ui:VisualElement>
     <ui:VisualElement name="Buttons" style="margin-top: 8px;">
         <ui:Button text="Add Settings" display-tooltip-when-elided="true" name="add-settings-btn" style="height: 31px; font-size: 18px;" />
-        <ui:Button text="Hot Key Code Patch" display-tooltip-when-elided="true" name="override-btn" style="height: 31px; font-size: 18px;" />
+        <ui:Button text="Hot Key Code Patch - 1" display-tooltip-when-elided="true" name="override-1-btn" style="height: 31px; font-size: 18px;" />
         <ui:Button text="Add Define" display-tooltip-when-elided="true" name="add-define" style="height: 31px; font-size: 18px;" />
         <ui:Button text="Add InputAction" display-tooltip-when-elided="true" name="add-inputAction" style="height: 31px; font-size: 18px;" />
+        <ui:Button text="Hot Key Code Patch - 2" display-tooltip-when-elided="true" name="override-2-btn" style="height: 31px; font-size: 18px;" />
     </ui:VisualElement>
     <ui:VisualElement style="height: 131px; flex-direction: column; margin-bottom: 5px; margin-left: 2px; justify-content: flex-end; align-items: stretch; flex-wrap: nowrap;">
         <ui:Toggle label="Auto Shader Graph Override" name="auto-override" style="justify-content: center; align-items: stretch; flex-direction: row; flex-wrap: nowrap;" />
