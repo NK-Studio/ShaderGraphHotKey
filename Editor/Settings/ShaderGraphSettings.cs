@@ -25,8 +25,6 @@ namespace ShaderGraphShotKey.Editor.Settings
 
         private const string HotKeyDefine = "SHADER_GRAPH_HOTKEY";
 
-        private const string KShowOnStartupPreference = "NKStudio.ShaderGraph.HotKey";
-
         private ShaderGraphHotKeySettings settings;
 
         private InputActionAsset _inputActionAsset;
@@ -96,12 +94,11 @@ namespace ShaderGraphShotKey.Editor.Settings
 
             #region Button
 
-            Button AddSettingdBtn = root.Q<Button>("add-settings-btn");
+            Button addSettingsBtn = root.Q<Button>("add-settings-btn");
             Button createInputActionBtn = root.Q<Button>("create-inputAction-btn");
             Button createSettingsBtn = root.Q<Button>("create-settings-btn");
             Button patchBtn = root.Q<Button>("override-btn");
             Button addInputActionDefineBtn = root.Q<Button>("add-inputAction-define");
-            Button applyBtn = root.Q<Button>("apply-btn");
 
             #endregion
 
@@ -141,7 +138,7 @@ namespace ShaderGraphShotKey.Editor.Settings
             createInputActionBtn.RegisterCallback<MouseUpEvent>(_ => { CreateInputAction(); });
 
             //Settings파일 생성 버튼
-            AddSettingdBtn.RegisterCallback<MouseUpEvent>(_ => { InstallSettings(); });
+            addSettingsBtn.RegisterCallback<MouseUpEvent>(_ => { InstallSettings(); });
             createSettingsBtn.RegisterCallback<MouseUpEvent>(_ => { InstallSettings(); });
 
             //세팅 필드 변화 체크
@@ -181,7 +178,7 @@ namespace ShaderGraphShotKey.Editor.Settings
                 AddHotKeyHintToNode();
             });
 
-            addInputActionDefineBtn.RegisterCallback<MouseUpEvent>(evt =>
+            addInputActionDefineBtn.RegisterCallback<MouseUpEvent>(_ =>
             {
                 //인풋 액션 설치
                 CreateInputAction();
@@ -192,8 +189,6 @@ namespace ShaderGraphShotKey.Editor.Settings
                 //새로고침
                 AssetDatabase.Refresh();
             });
-
-            //applyBtn.RegisterCallback<MouseUpEvent>(ApplyCallback);
 
             languageField.RegisterValueChangedCallback(_ =>
             {
@@ -532,7 +527,7 @@ namespace ShaderGraphShotKey.Editor.Settings
 
         private string DefaultSetKeyPath(Type nodeType)
         {
-            string keyboardPath = string.Empty;
+            string keyboardPath;
 #if SHADER_GRAPH_HOTKEY
             const string kDefaultKey = "<Keyboard>";
 
