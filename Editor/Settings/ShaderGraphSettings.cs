@@ -7,351 +7,647 @@ using UnityEditor;
 using UnityEditor.ShaderGraph;
 using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.UIElements;
 using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
-using Object = UnityEngine.Object;
+using UnityEngine.UIElements;
 
 
-public class ShaderGraphSettings : EditorWindow
+namespace ShaderGraphShotKey.Editor.Settings
 {
-    private const string NodeAssetPath = "Assets/Settings/Node Controls.inputactions";
-
-    private const string HotKeyAssembly =
-        "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"NKStudio.ShaderGraph.HotKey\")]";
-
-    private const string ShaderGraphPackageName = "com.unity.shadergraph";
-
-    private const string HotKeyDefine = "SHADER_GRAPH_HOTKEY";
-
-    private const string KShowOnStartupPreference = "NKStudio.ShaderGraph.HotKey";
-
-    private static bool ShowOnStartup
+    public class ShaderGraphSettings : EditorWindow
     {
-        get => EditorPrefs.GetBool(KShowOnStartupPreference, true);
-        set
+        private const string NodeAssetPath = "Assets/Settings/Node Controls.inputactions";
+
+        private const string HotKeyAssembly =
+            "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"NKStudio.ShaderGraph.HotKey\")]";
+
+        private const string ShaderGraphPackageName = "com.unity.shadergraph";
+
+        private const string HotKeyDefine = "SHADER_GRAPH_HOTKEY";
+
+        private const string KShowOnStartupPreference = "NKStudio.ShaderGraph.HotKey";
+
+        private ShaderGraphHotKeySettings settings;
+
+        private InputActionAsset InputActionAsset;
+
+        [MenuItem("Tools/ShaderGraphSettings")]
+        public static void Title()
         {
-            if (value != ShowOnStartup) EditorPrefs.SetBool(KShowOnStartupPreference, value);
+            ShaderGraphSettings wnd = GetWindow<ShaderGraphSettings>();
+            wnd.titleContent = new GUIContent("ShaderGraphSettings");
+            wnd.minSize = new Vector2(290, 320);
+            wnd.maxSize = new Vector2(380, 320);
         }
-    }
 
-    [MenuItem("Tools/ShaderGraphSettings")]
-    public static void Title()
-    {
-        ShaderGraphSettings wnd = GetWindow<ShaderGraphSettings>();
-        wnd.titleContent = new GUIContent("ShaderGraphSettings");
-    }
-
-    [InitializeOnLoadMethod]
-    private static void Init()
-    {
-        if (ShowOnStartup)
-            EditorApplication.update += ShowAtStartup;
-    }
-
-    static void ShowAtStartup()
-    {
-        if (!Application.isPlaying)
-            Title();
-
-        EditorApplication.update -= ShowAtStartup;
-    }
-
-    private void OnDestroy()
-    {
-        EditorApplication.update -= ShowAtStartup;
-    }
-
-    public void CreateGUI()
-    {
-        // Each editor window contains a root VisualElement object
-        VisualElement root = rootVisualElement;
-
-        // Import UXML
-        VisualTreeAsset visualTree =
-            AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
-                "Assets/ShaderGraphHotKey/Editor/Settings/ShaderGraphSettings.uxml");
-        VisualElement container = visualTree.Instantiate();
-        root.Add(container);
-
-        Button create_btn = root.Q<Button>("create-btn");
-        Button change_btn = root.Q<Button>("unity-change-btn");
-        Button change_btn2 = root.Q<Button>("unity-change2-btn");
-        Button add_Define_btn = root.Q<Button>("unity-add-define");
-        Button apply_btn = root.Q<Button>("unity-apply-btn");
-        ObjectField inputActionField = root.Q<ObjectField>("inputAction-field");
-        inputActionField.objectType = typeof(InputActionAsset);
-        inputActionField.allowSceneObjects = false;
-
-        create_btn.RegisterCallback<MouseUpEvent>(evt =>
+        [InitializeOnLoadMethod]
+        private static void Init()
         {
-            //파일이 있어야되는 경로
-            const string path = "Assets/Settings/Node Controls.inputactions";
-            const string kDefaultAssetLayout = "{}";
+            int settingsId = EditorPrefs.GetInt("SGHKSettingsID", -1);
 
-            //파일을 가지고 있는지 체크
-            bool hasSettingsFile = File.Exists(path);
-
-            //가지고 있다면 에러 표시
-            if (hasSettingsFile)
+            //세팅 파일이 없는 경우 기본만 띄웁니다.
+            if (settingsId == -1)
+                EditorApplication.update += ShowAtStartup;
+            else
             {
-                Debug.LogWarning("이미 Settings 폴더에 Node Controls파일이 있습니다.");
+                //기존에 있는 세팅 데이터를 기반으로 오픈합니다.
+                string path = AssetDatabase.GetAssetPath(settingsId);
+                ShaderGraphHotKeySettings temporarySettings =
+                    AssetDatabase.LoadAssetAtPath<ShaderGraphHotKeySettings>(path);
+                bool showOnStartup = temporarySettings.StartAtShow == ShaderGraphHotKeySettings.KStartUp.Always;
+
+                if (showOnStartup)
+                    EditorApplication.update += ShowAtStartup;
+
+                //오버라이드 시킵니다.
+                if (temporarySettings.AutoShaderGraphOverride)
+                    OverridePackage();
+            }
+        }
+
+        private static void ShowAtStartup()
+        {
+            if (!Application.isPlaying)
+                Title();
+
+            EditorApplication.update -= ShowAtStartup;
+        }
+
+        private void OnDestroy()
+        {
+            EditorApplication.update -= ShowAtStartup;
+        }
+
+        public void CreateGUI()
+        {
+            #region Init
+
+            // Each editor window contains a root VisualElement object
+            VisualElement root = rootVisualElement;
+
+            // Import UXML
+            VisualTreeAsset visualTree =
+                AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
+                    "Assets/ShaderGraphShotKey/Editor/Settings/ShaderGraphSettings.uxml");
+            VisualElement container = visualTree.Instantiate();
+            root.Add(container);
+
+            #endregion
+
+            #region Button
+
+            Button AddSettingdBtn = root.Q<Button>("add-settings-btn");
+            Button createInputActionBtn = root.Q<Button>("create-inputAction-btn");
+            Button createSettingsBtn = root.Q<Button>("create-settings-btn");
+            Button patchBtn = root.Q<Button>("override-btn");
+            Button addInputActionDefineBtn = root.Q<Button>("add-inputAction-define");
+            Button applyBtn = root.Q<Button>("apply-btn");
+
+            #endregion
+
+            #region inputActionField
+
+            ObjectField inputActionField = root.Q<ObjectField>("inputAction-field");
+            inputActionField.objectType = typeof(InputActionAsset);
+            inputActionField.allowSceneObjects = false;
+
+            #endregion
+
+            #region settingsField
+
+            ObjectField settingsField = root.Q<ObjectField>("settings-field");
+            settingsField.objectType = typeof(ShaderGraphHotKeySettings);
+            settingsField.allowSceneObjects = false;
+
+            #endregion
+
+            #region DropdownField
+
+            EnumField languageField = root.Q<EnumField>("language-field");
+            DropdownField startAtShowField = root.Q<DropdownField>("startAtShow-field");
+
+            #endregion
+
+            #region Toggle
+
+            Toggle autoOverride = root.Q<Toggle>("auto-override");
+
+            #endregion
+
+            //초기 셋업을 합니다.
+            InitSetUp();
+
+            //InputAction 생성 버튼
+            createInputActionBtn.RegisterCallback<MouseUpEvent>(_ => { CreateInputAction(); });
+
+            //Settings파일 생성 버튼
+            AddSettingdBtn.RegisterCallback<MouseUpEvent>(_ => { InstallSettings(); });
+            createSettingsBtn.RegisterCallback<MouseUpEvent>(_ => { InstallSettings(); });
+
+            //세팅 필드 변화 체크
+            settingsField.RegisterValueChangedCallback(evt =>
+            {
+                if (settingsField.value == null)
+                {
+                    Reset();
+                    return;
+                }
+
+                //변경된 값 적용
+                settings = (ShaderGraphHotKeySettings) evt.newValue;
+                settingsField.value = settings;
+
+                //세팅
+                SetUp(settings);
+            });
+
+            //인풋 액션 필드 변화 체크
+            inputActionField.RegisterValueChangedCallback(evt =>
+            {
+                if (inputActionField.value == null)
+                {
+                    //단축키 제거하는 로직
+                    return;
+                }
+
+                //변경된 값 적용
+                InputActionAsset = (InputActionAsset) evt.newValue;
+                inputActionField.value = settings;
+            });
+
+            patchBtn.RegisterCallback<MouseUpEvent>(_ =>
+            {
+                if (settingsField.value == null || settings == null) return;
+                settings.AutoShaderGraphOverride = true;
+                autoOverride.value = true;
+                OverridePackage();
+                
+                AddHotKeyHintToNode();
+            });
+
+            addInputActionDefineBtn.RegisterCallback<MouseUpEvent>(evt =>
+            {
+                //인풋 액션 설치
+                CreateInputAction();
+
+                //디파인 설치
+                InstallDefine();
+                
+                //새로고침
+                AssetDatabase.Refresh();
+            });
+
+            //applyBtn.RegisterCallback<MouseUpEvent>(ApplyCallback);
+
+            languageField.RegisterValueChangedCallback(_ =>
+            {
+                if (settingsField.value == null || settings == null) return;
+                settings.Language = (ShaderGraphHotKeySettings.KLanguage) languageField.value;
+
+                //버튼 설정
+                switch (settings.Language)
+                {
+                    case ShaderGraphHotKeySettings.KLanguage.English:
+                        createSettingsBtn.text = "Create";
+                        createInputActionBtn.text = "Create";
+                        autoOverride.label = "Auto Shader Graph Override";
+                        break;
+                    case ShaderGraphHotKeySettings.KLanguage.한국어:
+                        createSettingsBtn.text = "생성";
+                        createInputActionBtn.text = "생성";
+                        autoOverride.label = "자동 쉐이더 그래프 덮어쓰기";
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
+                //StartAtShow 설정
+                startAtShowField.index = -1; //초기화
+
+                //언어 체인지
+                startAtShowField.choices = settings.Language == ShaderGraphHotKeySettings.KLanguage.English
+                    ? settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.English]
+                    : settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.한국어];
+
+                startAtShowField.index = (int) settings.StartAtShow; //다시 설정
+            });
+
+            startAtShowField.RegisterValueChangedCallback(_ =>
+            {
+                if (settingsField.value == null || settings == null) return;
+                settings.StartAtShow = (ShaderGraphHotKeySettings.KStartUp) startAtShowField.index;
+            });
+
+            autoOverride.RegisterValueChangedCallback(evt =>
+            {
+                //체크 안되도록 막음
+                if (settingsField.value == null || settings == null)
+                {
+                    autoOverride.value = false;
+                    return;
+                }
+
+                settings.AutoShaderGraphOverride = evt.newValue;
+            });
+
+            void InitSetUp()
+            {
+                int settingsid = EditorPrefs.GetInt("SGHKSettingsID", -1);
+                int Actionid = EditorPrefs.GetInt("SGHKInputActionID", -1);
+
+                //세팅 파일이 없는 경우 기본만 띄웁니다.
+                if (settingsid == -1)
+                {
+                    languageField.Init(ShaderGraphHotKeySettings.KLanguage.English);
+                    startAtShowField.value = ShaderGraphHotKeySettings.KStartUp.Always.ToString();
+                    autoOverride.value = false;
+                }
+                else
+                {
+                    //기존에 있던 것을 반영합니다.
+                    string path = AssetDatabase.GetAssetPath(settingsid);
+                    if (path.Equals(string.Empty))
+                    {
+                        EditorPrefs.SetInt("SGHKSettingsID", -1);
+                        return;
+                    }
+
+                    settingsField.value = AssetDatabase.LoadAssetAtPath<ShaderGraphHotKeySettings>(path);
+                    settings = (ShaderGraphHotKeySettings) settingsField.value;
+
+                    languageField.Init(settings.Language);
+
+                    if (settings.Language == ShaderGraphHotKeySettings.KLanguage.English)
+                        startAtShowField.choices =
+                            settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.English];
+                    else
+                        startAtShowField.choices = settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.한국어];
+
+                    startAtShowField.index = (int) settings.StartAtShow;
+
+                    autoOverride.value = settings.AutoShaderGraphOverride;
+
+                    switch (settings.Language)
+                    {
+                        case ShaderGraphHotKeySettings.KLanguage.English:
+                            createSettingsBtn.text = "Create";
+                            createInputActionBtn.text = "Create";
+                            break;
+                        case ShaderGraphHotKeySettings.KLanguage.한국어:
+                            createSettingsBtn.text = "생성";
+                            createInputActionBtn.text = "생성";
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+
+                if (Actionid != -1)
+                {
+                    //기존에 있던 것을 반영합니다.
+                    string Actionpath = AssetDatabase.GetAssetPath(Actionid);
+
+                    if (Actionpath.Equals(string.Empty))
+                    {
+                        EditorPrefs.SetInt("SGHKInputActionID", -1);
+                        return;
+                    }
+
+                    inputActionField.value = AssetDatabase.LoadAssetAtPath<InputActionAsset>(Actionpath);
+                    InputActionAsset = (InputActionAsset) inputActionField.value;
+                }
+            }
+
+            void SetUp(ShaderGraphHotKeySettings settings)
+            {
+                //다시 저장
+                EditorPrefs.SetInt("SGHKSettingsID", settings.GetInstanceID());
+
+                #region LanguageField
+
+                languageField.Init(settings.Language);
+
+                #endregion
+
+                #region StartAtShowField
+
+                //초기화
+                startAtShowField.index = -1;
+
+                if (settings.Language == ShaderGraphHotKeySettings.KLanguage.English)
+                    startAtShowField.choices = settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.English];
+                else
+                    startAtShowField.choices = settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.한국어];
+
+                startAtShowField.index = (int) settings.StartAtShow;
+
+                #endregion
+
+                #region AutoOverride
+
+                autoOverride.value = settings.AutoShaderGraphOverride;
+
+                #endregion
+            }
+
+            void Reset()
+            {
+                //모두 초기화
+                languageField.Init(ShaderGraphHotKeySettings.KLanguage.English);
+                startAtShowField.choices = null;
+                startAtShowField.value = ShaderGraphHotKeySettings.KStartUp.Always.ToString();
+                autoOverride.value = false;
+
+                EditorPrefs.SetInt("SGHKSettingsID", -1);
+            }
+
+            void InstallSettings()
+            {
+                const string path = "Assets/Settings/ShaderGraphHotKeySettingsAsset.asset";
+
+                if (File.Exists(path))
+                {
+                    Debug.Log("이미 파일이 있습니다.");
+                    return;
+                }
+
+                //파일을 가지고 있는지 체크
+                bool hasSettingsFile = File.Exists(path);
+
+                //가지고 있다면 에러 표시
+                if (hasSettingsFile)
+                {
+                    if (settingsField.value == null || settings == null) return;
+                    string warningMsg = settings.Language == ShaderGraphHotKeySettings.KLanguage.English
+                        ? "There is already a file in the Settings folder."
+                        : "이미 Settings 폴더에 파일이 있습니다.";
+                    Debug.LogWarning(warningMsg);
+
+                    return;
+                }
+
+                //Settings 폴더가 있는지 체크
+                bool hasSettingsDir = Directory.Exists($"{Application.dataPath}/Settings");
+
+                //없으면 생성
+                if (!hasSettingsDir)
+                    Directory.CreateDirectory($"{Application.dataPath}/Settings");
+
+                //스크립터블 생성
+                settings = CreateInstance<ShaderGraphHotKeySettings>();
+                settings.Language = ShaderGraphHotKeySettings.KLanguage.English; //영어로 설정
+                settings.StartAtShow = ShaderGraphHotKeySettings.KStartUp.Always; //컴파일 후 계속 켜짐 설정
+                settings.AutoShaderGraphOverride = false; //초기에는 해제
+                AssetDatabase.CreateAsset(settings, path);
+                settingsField.value = settings;
+
+                //파일 위치 저장
+                int id = settings.GetInstanceID();
+                EditorPrefs.SetInt("SGHKSettingsID", id);
+                Debug.Log("생성되었습니다.");
+            }
+
+            void CreateInputAction()
+            {
+                //파일이 있어야되는 경로
+                const string path = "Assets/Settings/Node Controls.inputactions";
+                const string kDefaultAssetLayout = "{}";
+
+                //파일을 가지고 있는지 체크
+                bool hasSettingsFile = File.Exists(path);
+
+                //가지고 있다면 에러 표시
+                if (hasSettingsFile)
+                {
+                    Debug.LogWarning("이미 Settings 폴더에 Node Controls파일이 있습니다.");
+                    return;
+                }
+
+                //파일 생성
+                TextAsset json = new TextAsset(kDefaultAssetLayout);
+                File.WriteAllText(path, json.text);
+                AssetDatabase.Refresh();
+
+                //가져오기
+                InputActionAsset inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(path);
+                CreateAllNode(inputActionAsset, path);
+                AssetDatabase.Refresh();
+
+                //파일 위치 저장
+                int id = inputActionAsset.GetInstanceID();
+                EditorPrefs.SetInt("SGHKInputActionID", id);
+                inputActionField.value = inputActionAsset;
+                Debug.Log("생성되었습니다.");
+            }
+
+            void InstallDefine()
+            {
+                string defines =
+                    PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+
+                string addHotKeyDefineToCurrentDefine = string.Concat(defines, ";", HotKeyDefine);
+
+                if (!defines.Contains(HotKeyDefine))
+                    PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup,
+                        addHotKeyDefineToCurrentDefine);
+            }
+        }
+
+        //패키지를 오버라이드 시킵니다.
+        private static void OverridePackage()
+        {
+            DirectoryInfo shaderGraphPackage = GetPackageInstalled(ShaderGraphPackageName);
+
+            string filePath = $"{shaderGraphPackage.FullName}/Editor/Drawing/Views/GraphEditorView.cs";
+
+            FileInfo file = new FileInfo(filePath);
+
+            Assert.IsNotNull(file);
+
+            //전체 코드를 가져옵니다.
+            string text = File.ReadAllText(filePath);
+
+            if (text.Contains(HotKeyAssembly))
+            {
+                Debug.Log("세팅이 완료되었습니다.");
                 return;
             }
 
-            //파일 생성
-            TextAsset json = new TextAsset(kDefaultAssetLayout);
-            File.WriteAllText(path, json.text);
-            AssetDatabase.Refresh();
+            text = text.Replace("namespace UnityEditor.ShaderGraph.Drawing",
+                    $"{HotKeyAssembly}\n\nnamespace UnityEditor.ShaderGraph.Drawing")
+                .Replace("MaterialGraphView m_GraphView;",
+                    "public static Action<MaterialGraphView, GraphData> keyboardCallback;\n\t\t\t\tMaterialGraphView m_GraphView;")
+                .Replace("m_InspectorView.InitializeGraphSettings();",
+                    "m_InspectorView.InitializeGraphSettings();\n\t\t\t\tkeyboardCallback?.Invoke(graphView, graph);");
 
-            //가져오기
-            InputActionAsset inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(path);
-            CreateAllNode(inputActionAsset, path);
-            AssetDatabase.Refresh();
-            inputActionField.value = inputActionAsset;
-            Debug.Log("생성되었습니다.");
-        });
-        change_btn.RegisterCallback<MouseUpEvent>(ChangeCallback);
-        change_btn2.RegisterCallback<MouseUpEvent>(ChangeCallback2);
-        add_Define_btn.RegisterCallback<MouseUpEvent>(AddDefineCallback);
-        apply_btn.RegisterCallback<MouseUpEvent>(ApplyCallback);
-        inputActionField.RegisterValueChangedCallback(Callback);
-    }
-
-    private void ChangeCallback2(MouseUpEvent evt)
-    {
-        DirectoryInfo shaderGraphPackage = GetPackageInstalled(ShaderGraphPackageName);
-        AddHotKeyHintToNode(shaderGraphPackage);
-        AssetDatabase.Refresh();
-    }
-
-    //인풋에셋에 노드를 세팅합니다.
-    private static void CreateAllNode(InputActionAsset inputActionAsset, string path)
-    {
-#if SHADER_GRAPH_HOTKEY
-        IEnumerable<Type> types = Assembly.GetAssembly(typeof(AbstractMaterialNode)).GetTypes()
-            .Where(t => t.IsSubclassOf(typeof(AbstractMaterialNode)));
-
-        foreach (Type type in types)
-        {
-            Attribute attribute = Attribute.GetCustomAttribute(type, typeof(TitleAttribute));
-            TitleAttribute titleAttribute = (TitleAttribute) attribute;
-
-            string category;
-
-            if (titleAttribute != null)
-                category = titleAttribute.title[0];
-            else
-                continue;
-
-            if (inputActionAsset.FindActionMap(category) == null)
-                inputActionAsset.AddActionMap(category);
-
-            string keyboardPath = DefaultSetKeyPath(type);
-
-            inputActionAsset.FindActionMap(category).AddAction(name: type.Name, type: InputActionType.Button)
-                .AddBinding(path: keyboardPath, groups: "Keyboard");
+            File.WriteAllText(filePath, text);
+            //AddHotKeyHintToNode(shaderGraphPackage);
         }
 
-        string data = inputActionAsset.ToJson();
-        File.WriteAllText(path, data);
+        //인풋에셋에 노드를 세팅합니다.
+        private void CreateAllNode(InputActionAsset inputActionAsset, string path)
+        {
+#if SHADER_GRAPH_HOTKEY
+            IEnumerable<Type> types = Assembly.GetAssembly(typeof(AbstractMaterialNode)).GetTypes()
+                .Where(t => t.IsSubclassOf(typeof(AbstractMaterialNode)));
+
+            foreach (Type type in types)
+            {
+                Attribute attribute = Attribute.GetCustomAttribute(type, typeof(TitleAttribute));
+                TitleAttribute titleAttribute = (TitleAttribute) attribute;
+
+                string category;
+
+                if (titleAttribute != null)
+                    category = titleAttribute.title[0];
+                else
+                    continue;
+
+                if (inputActionAsset.FindActionMap(category) == null)
+                    inputActionAsset.AddActionMap(category);
+
+                string keyboardPath = DefaultSetKeyPath(type);
+
+                inputActionAsset.FindActionMap(category).AddAction(name: type.Name, type: InputActionType.Button)
+                    .AddBinding(path: keyboardPath, groups: "Keyboard");
+            }
+
+            string data = inputActionAsset.ToJson();
+            File.WriteAllText(path, data);
 #endif
-    }
-
-    private static string DefaultSetKeyPath(Type nodeType)
-    {
-#if SHADER_GRAPH_HOTKEY
-        string keyboardPath = string.Empty;
-        const string kDefaultKey = "<Keyboard>";
-
-        switch (nodeType)
-        {
-            case var type when type == typeof(IntegerNode):
-                keyboardPath = $"{kDefaultKey}/0";
-                break;
-            case var type when type == typeof(Vector1Node):
-                keyboardPath = $"{kDefaultKey}/1";
-                break;
-            case var type when type == typeof(Vector2Node):
-                keyboardPath = $"{kDefaultKey}/2";
-                break;
-            case var type when type == typeof(Vector3Node):
-                keyboardPath = $"{kDefaultKey}/3";
-                break;
-            case var type when type == typeof(Vector4Node):
-                keyboardPath = $"{kDefaultKey}/4";
-                break;
-            case var type when type == typeof(ColorNode):
-                keyboardPath = $"{kDefaultKey}/5";
-                break;
-            case var type when type == typeof(SampleTexture2DNode):
-                keyboardPath = $"{kDefaultKey}/t";
-                break;
-            case var type when type == typeof(UVNode):
-                keyboardPath = $"{kDefaultKey}/u";
-                break;
-            case var type when type == typeof(AddNode):
-                keyboardPath = $"{kDefaultKey}/a";
-                break;
-            case var type when type == typeof(SubtractNode):
-                keyboardPath = $"{kDefaultKey}/s";
-                break;
-            case var type when type == typeof(MultiplyNode):
-                keyboardPath = $"{kDefaultKey}/m";
-                break;
-            case var type when type == typeof(DivideNode):
-                keyboardPath = $"{kDefaultKey}/d";
-                break;
-            case var type when type == typeof(OneMinusNode):
-                keyboardPath = $"{kDefaultKey}/o";
-                break;
-            case var type when type == typeof(PowerNode):
-                keyboardPath = $"{kDefaultKey}/e";
-                break;
-            case var type when type == typeof(LerpNode):
-                keyboardPath = $"{kDefaultKey}/l";
-                break;
-            case var type when type == typeof(SplitNode):
-                keyboardPath = $"{kDefaultKey}/b";
-                break;
-            case var type when type == typeof(SwizzleNode):
-                keyboardPath = $"{kDefaultKey}/z";
-                break;
-            case var type when type == typeof(NormalizeNode):
-                keyboardPath = $"{kDefaultKey}/n";
-                break;
-            case var type when type == typeof(DotProductNode):
-                keyboardPath = $"{kDefaultKey}/.";
-                break;
         }
-        return keyboardPath;
+
+        private string DefaultSetKeyPath(Type nodeType)
+        {
+#if SHADER_GRAPH_HOTKEY
+            string keyboardPath = string.Empty;
+            const string kDefaultKey = "<Keyboard>";
+
+            switch (nodeType)
+            {
+                case var type when type == typeof(IntegerNode):
+                    keyboardPath = $"{kDefaultKey}/0";
+                    break;
+                case var type when type == typeof(Vector1Node):
+                    keyboardPath = $"{kDefaultKey}/1";
+                    break;
+                case var type when type == typeof(Vector2Node):
+                    keyboardPath = $"{kDefaultKey}/2";
+                    break;
+                case var type when type == typeof(Vector3Node):
+                    keyboardPath = $"{kDefaultKey}/3";
+                    break;
+                case var type when type == typeof(Vector4Node):
+                    keyboardPath = $"{kDefaultKey}/4";
+                    break;
+                case var type when type == typeof(ColorNode):
+                    keyboardPath = $"{kDefaultKey}/5";
+                    break;
+                case var type when type == typeof(SampleTexture2DNode):
+                    keyboardPath = $"{kDefaultKey}/t";
+                    break;
+                case var type when type == typeof(UVNode):
+                    keyboardPath = $"{kDefaultKey}/u";
+                    break;
+                case var type when type == typeof(AddNode):
+                    keyboardPath = $"{kDefaultKey}/a";
+                    break;
+                case var type when type == typeof(SubtractNode):
+                    keyboardPath = $"{kDefaultKey}/s";
+                    break;
+                case var type when type == typeof(MultiplyNode):
+                    keyboardPath = $"{kDefaultKey}/m";
+                    break;
+                case var type when type == typeof(DivideNode):
+                    keyboardPath = $"{kDefaultKey}/d";
+                    break;
+                case var type when type == typeof(OneMinusNode):
+                    keyboardPath = $"{kDefaultKey}/o";
+                    break;
+                case var type when type == typeof(PowerNode):
+                    keyboardPath = $"{kDefaultKey}/e";
+                    break;
+                case var type when type == typeof(LerpNode):
+                    keyboardPath = $"{kDefaultKey}/l";
+                    break;
+                case var type when type == typeof(SplitNode):
+                    keyboardPath = $"{kDefaultKey}/b";
+                    break;
+                case var type when type == typeof(SwizzleNode):
+                    keyboardPath = $"{kDefaultKey}/z";
+                    break;
+                case var type when type == typeof(NormalizeNode):
+                    keyboardPath = $"{kDefaultKey}/n";
+                    break;
+                case var type when type == typeof(DotProductNode):
+                    keyboardPath = $"{kDefaultKey}/.";
+                    break;
+            }
+
+            return keyboardPath;
 #else
-        return "";
+            return string.Empty;
 #endif
-    }
-
-    private void Callback(ChangeEvent<Object> evt)
-    {
-    }
-
-    private void ChangeCallback(MouseUpEvent evt)
-    {
-        DirectoryInfo shaderGraphPackage = GetPackageInstalled(ShaderGraphPackageName);
-
-        string filePath = $"{shaderGraphPackage.FullName}/Editor/Drawing/Views/GraphEditorView.cs";
-
-        FileInfo file = new(filePath);
-
-        Assert.IsNotNull(file);
-
-        //전체 코드를 가져옵니다.
-        string text = File.ReadAllText(filePath);
-        text = text.Replace("namespace UnityEditor.ShaderGraph.Drawing",
-                $"{HotKeyAssembly}\n\nnamespace UnityEditor.ShaderGraph.Drawing")
-            .Replace("MaterialGraphView m_GraphView;",
-                "public static Action<MaterialGraphView, GraphData> keyboardCallback;\n\t\t\t\tMaterialGraphView m_GraphView;")
-            .Replace("m_InspectorView.InitializeGraphSettings();",
-                "m_InspectorView.InitializeGraphSettings();\n\t\t\t\tkeyboardCallback?.Invoke(graphView, graph);");
-
-        File.WriteAllText(filePath, text);
-    }
-
-    private static DirectoryInfo GetPackageInstalled(string packageName)
-    {
-        //폴더 안의 정보를 가져옵니다.
-        DirectoryInfo packageCache = new("Library/PackageCache");
-
-        //찾고자 하는 패키지를 찾습니다.
-        DirectoryInfo result = packageCache.GetDirectories()
-            .FirstOrDefault(package => package.Name.Contains(packageName));
-
-        return result;
-    }
-
-    private static void AddHotKeyHintToNode(DirectoryInfo shaderGraphPackage)
-    {
-        //키보드 패스
-        const string kDefaultKey = "<Keyboard>/";
-        
-        //인풋 액션파일이 있는지 찾습니다.
-        InputActionAsset inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(NodeAssetPath);
-
-        //단축키가 있는 노드를 모아놓은 곳입니다.
-        var hasHotKeyNodes = new Dictionary<string, string>();
-
-        //단축키가 있는 것을 체크합니다.
-        foreach (InputActionMap actionMap in inputActionAsset.actionMaps)
-        foreach (InputAction action in actionMap.actions)
-        foreach (InputBinding binding in action.bindings.Where(binding => binding.path.Length != 0))
-            hasHotKeyNodes.Add(action.name, binding.path);
-
-        //단축키가 없으면 여기서 스톱
-        if (hasHotKeyNodes.Count == 0) return;
-
-        //단축키가 있는 노드들을 모두 순례를 돕니다.
-        foreach (var hasHotKeyNode in hasHotKeyNodes)
-        {
-            //노드 이름으로 CS파일의 GUID를 찾습니다.
-            string[] guidByNodes = AssetDatabase.FindAssets(hasHotKeyNode.Key,
-                new[] {"Packages/com.unity.shadergraph/Editor/Data/Nodes"});
-
-            //노드 파일의 경로를 가져옵니다.
-
-            string nodePath = string.Empty;
-
-            //찾은 CS파일을 한번 필터링 합니다.
-            foreach (string guidByNode in guidByNodes)
-            {
-                string realPath = AssetDatabase.GUIDToAssetPath(guidByNode);
-
-                int startSplit = realPath.LastIndexOf("/", StringComparison.Ordinal);
-                string formatText = realPath[startSplit..].Replace("/", "").Replace(".cs", "");
-                if (!formatText.Equals(hasHotKeyNode.Key)) continue;
-                nodePath = realPath;
-                break;
-            }
-
-            Assert.IsTrue(nodePath != string.Empty,"304번 코드에 문제가 발생했습니다.");
-            
-            //단축키를 표시합니다.
-            string hotKey = hasHotKeyNode.Value.Replace(kDefaultKey, "").ToUpper();
-
-            //전체 코드를 가져옵니다.
-            string text = File.ReadAllText(nodePath);
-
-            //코드를 라인별로 자릅니다.
-            string[] codeLines = text.Split('\r', '\n');
-
-            //라인별로 순례를 돕니다.
-            foreach (string codeLine in codeLines)
-            {
-                //해당 라인에 타이틀이 없으면 무시합니다.
-                if (!codeLine.Contains("[Title(")) continue;
-
-                int startIndex = codeLine.IndexOf("\")]", StringComparison.Ordinal);
-                string afterTitleLine = codeLine.Insert(startIndex, $" ({hotKey})");
-                text = text.Replace(codeLine, afterTitleLine);
-                break;
-            }
-            File.WriteAllText(nodePath, text);
         }
-    }
 
-    private void AddDefineCallback(MouseUpEvent evt)
-    {
-        string defines =
-            PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+        private static DirectoryInfo GetPackageInstalled(string packageName)
+        {
+            //폴더 안의 정보를 가져옵니다.
+            DirectoryInfo packageCache = new("Library/PackageCache");
 
-        string addHotKeyDefineToCurrentDefine = string.Concat(defines, ";", HotKeyDefine);
+            //찾고자 하는 패키지를 찾습니다.
+            DirectoryInfo result = packageCache.GetDirectories()
+                .FirstOrDefault(package => package.Name.Contains(packageName));
 
-        if (!defines.Contains(HotKeyDefine))
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup,
-                addHotKeyDefineToCurrentDefine);
-    }
+            return result;
+        }
 
-    private void ApplyCallback(MouseUpEvent evt)
-    {
-        // AssetDatabase.Refresh();
-        // Debug.Log("적용 완료");
+        private void AddHotKeyHintToNode()
+        {
+            const string kDefaultKey = "<Keyboard>/";
+            InputActionAsset inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(NodeAssetPath);
+
+            Dictionary<string, string> hasHotKeyNodes = new Dictionary<string, string>();
+
+            foreach (InputActionMap actionMap in inputActionAsset.actionMaps)
+            foreach (InputAction action in actionMap.actions)
+            foreach (InputBinding binding in action.bindings.Where(binding => binding.path.Length != 0))
+                hasHotKeyNodes.Add(action.name, binding.path);
+
+            if (hasHotKeyNodes.Count == 0) return;
+
+
+            foreach (KeyValuePair<string, string> hasHotKeyNode in hasHotKeyNodes)
+            {
+                string[] guidByNode = AssetDatabase.FindAssets(hasHotKeyNode.Key,
+                    new[] {"Packages/com.unity.shadergraph/Editor/Data/Nodes"});
+
+                string nodePath = AssetDatabase.GUIDToAssetPath(guidByNode[0]);
+
+                FileInfo file = new(nodePath);
+
+                Assert.IsTrue(file.Exists, $"{hasHotKeyNode.Key}.cs이 존재하지 않습니다.");
+
+                //전체 코드를 가져옵니다.
+                string text = File.ReadAllText(nodePath);
+
+                string[] codeLines = text.Split('\r', '\n');
+
+                string hotKey = hasHotKeyNode.Value.Replace(kDefaultKey, "");
+
+                foreach (string codeLine in codeLines)
+                {
+                    if (!codeLine.Contains("[Title(")) continue;
+                    int startIndex = codeLine.IndexOf("\")]", StringComparison.Ordinal);
+                    string afterTitleLine = codeLine.Insert(startIndex, $" ({hotKey.ToUpper()})");
+                    text = text.Replace(codeLine, afterTitleLine);
+                    break;
+                }
+
+                File.WriteAllText(nodePath, text);
+            }
+
+            Debug.Log("단축키 힌트 적용 완료");
+        }
     }
 }
