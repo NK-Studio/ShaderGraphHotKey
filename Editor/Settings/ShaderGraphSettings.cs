@@ -527,7 +527,7 @@ namespace ShaderGraphShotKey.Editor.Settings
 
         private string DefaultSetKeyPath(Type nodeType)
         {
-            string keyboardPath;
+            string keyboardPath = string.Empty;
 #if SHADER_GRAPH_HOTKEY
             const string kDefaultKey = "<Keyboard>";
 
