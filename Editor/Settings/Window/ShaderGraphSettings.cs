@@ -7,18 +7,16 @@ using ShaderGraphShotKey.Editor.Settings;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
-using UnityEditor.ShaderGraph;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
-using Assembly = System.Reflection.Assembly;
 #if ENABLE_INPUT_SYSTEM
 #endif
 
 
-namespace ShaderGraphHotKey.Editor.Settings
+namespace ShaderGraphHotKey.Editor.Settings.Window
 {
     public class ShaderGraphSettings : EditorWindow
     {
@@ -41,11 +39,13 @@ namespace ShaderGraphHotKey.Editor.Settings
         private InputActionAsset _inputActionAsset;
 #endif
 
-        [MenuItem("Tools/ShaderGraphSettings")]
+        [MenuItem("Window/ShaderGraph HotKey/ShaderGraphSettings")]
         public static void Title()
         {
             ShaderGraphSettings wnd = GetWindow<ShaderGraphSettings>();
             wnd.titleContent = new GUIContent("ShaderGraphSettings");
+            wnd.minSize = new Vector2(434, 600);
+            wnd.maxSize = new Vector2(560, 700);
         }
 
         [InitializeOnLoadMethod]
@@ -116,7 +116,7 @@ namespace ShaderGraphHotKey.Editor.Settings
             // Import UXML
             VisualTreeAsset visualTree =
                 AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
-                    "Assets/ShaderGraphHotKey/Editor/Settings/ShaderGraphSettings.uxml");
+                    "Assets/ShaderGraphHotKey/Editor/Settings/Window/ShaderGraphSettings.uxml");
             VisualElement container = visualTree.Instantiate();
             root.Add(container);
 
@@ -126,7 +126,7 @@ namespace ShaderGraphHotKey.Editor.Settings
 
             Button changeBothBtn = root.Q<Button>("change-both-btn");
             Button installInputSystemBtn = root.Q<Button>("Install-InputSystem-btn");
-            Button addSettingsBtn = root.Q<Button>("add-settings-btn");
+            //Button addSettingsBtn = root.Q<Button>("add-settings-btn");
             Button createInputActionBtn = root.Q<Button>("create-inputAction-btn");
             Button createSettingsBtn = root.Q<Button>("create-settings-btn");
             Button patchCodeBtn = root.Q<Button>("override-1-btn");
@@ -192,7 +192,7 @@ namespace ShaderGraphHotKey.Editor.Settings
             createInputActionBtn.RegisterCallback<MouseUpEvent>(_ => { CreateInputAction(); });
 
             //Settings파일 생성 버튼
-            addSettingsBtn.RegisterCallback<MouseUpEvent>(_ => { InstallSettings(); });
+            //addSettingsBtn.RegisterCallback<MouseUpEvent>(_ => { InstallSettings(); });
             createSettingsBtn.RegisterCallback<MouseUpEvent>(_ => { InstallSettings(); });
 
             //세팅 필드 변화 체크
@@ -285,7 +285,7 @@ namespace ShaderGraphHotKey.Editor.Settings
                         createSettingsBtn.text = "Create";
                         createInputActionBtn.text = "Create";
                         autoOverride.label = "Auto Shader Graph Override";
-                        addSettingsBtn.text = "Add Settings";
+                        //addSettingsBtn.text = "Add Settings";
                         patchCodeBtn.text = "Hot Key Code Patch";
                         addDefineBtn.text = "Add Define";
                         addInputActionBtn.text = "Add (Node)InputAction";
@@ -295,7 +295,7 @@ namespace ShaderGraphHotKey.Editor.Settings
                         createSettingsBtn.text = "생성";
                         createInputActionBtn.text = "생성";
                         autoOverride.label = "자동 쉐이더 그래프 덮어쓰기";
-                        addSettingsBtn.text = "Settings 생성";
+                        //addSettingsBtn.text = "Settings 생성";
                         patchCodeBtn.text = "단축키 시스템 패치";
                         addDefineBtn.text = "Define 적용";
                         addInputActionBtn.text = "(노드)인풋 액션 생성";
