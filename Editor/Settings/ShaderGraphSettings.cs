@@ -3,16 +3,22 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using ShaderGraphShotKey.Editor.Settings;
 using UnityEditor;
+using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.Requests;
 using UnityEditor.ShaderGraph;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
+using Assembly = System.Reflection.Assembly;
+#if ENABLE_INPUT_SYSTEM
+#endif
 
 
-namespace ShaderGraphShotKey.Editor.Settings
+namespace ShaderGraphHotKey.Editor.Settings
 {
     public class ShaderGraphSettings : EditorWindow
     {
@@ -23,11 +29,17 @@ namespace ShaderGraphShotKey.Editor.Settings
 
         private const string ShaderGraphPackageName = "com.unity.shadergraph";
 
+        private const string InputSystemPackageName = "com.unity.inputsystem";
+
         private const string HotKeyDefine = "SHADER_GRAPH_HOTKEY";
 
         private ShaderGraphHotKeySettings _settings;
 
+        private static AddRequest _addRequest;
+
+#if ENABLE_INPUT_SYSTEM
         private InputActionAsset _inputActionAsset;
+#endif
 
         [MenuItem("Tools/ShaderGraphSettings")]
         public static void Title()
@@ -48,7 +60,7 @@ namespace ShaderGraphShotKey.Editor.Settings
             {
                 //기존에 있는 세팅 데이터를 기반으로 오픈합니다.
                 string path = AssetDatabase.GetAssetPath(settingsId);
-                
+
                 ShaderGraphHotKeySettings temporarySettings =
                     AssetDatabase.LoadAssetAtPath<ShaderGraphHotKeySettings>(path);
 
@@ -59,15 +71,15 @@ namespace ShaderGraphShotKey.Editor.Settings
                     EditorPrefs.SetInt("SGHKSettingsID", -1);
                     return;
                 }
-                
+
                 bool showOnStartup = temporarySettings.StartAtShow == ShaderGraphHotKeySettings.KStartUp.Always;
 
                 if (showOnStartup)
                     EditorApplication.update += ShowAtStartup;
 
                 //오버라이드 시킵니다.
-                if (temporarySettings.AutoShaderGraphOverride)
-                    OverridePackage();
+                // if (temporarySettings.AutoShaderGraphOverride)
+                //     OverridePackage();
             }
         }
 
@@ -82,6 +94,16 @@ namespace ShaderGraphShotKey.Editor.Settings
         private void OnDestroy()
         {
             EditorApplication.update -= ShowAtStartup;
+        }
+
+        void OnEnable()
+        {
+            AssemblyReloadEvents.afterAssemblyReload +=   EndCompile;
+        }
+
+        void OnDisable()
+        {
+            AssemblyReloadEvents.afterAssemblyReload -=  EndCompile;
         }
 
         public void CreateGUI()
@@ -102,6 +124,8 @@ namespace ShaderGraphShotKey.Editor.Settings
 
             #region Button
 
+            Button changeBothBtn = root.Q<Button>("change-both-btn");
+            Button installInputSystemBtn = root.Q<Button>("Install-InputSystem-btn");
             Button addSettingsBtn = root.Q<Button>("add-settings-btn");
             Button createInputActionBtn = root.Q<Button>("create-inputAction-btn");
             Button createSettingsBtn = root.Q<Button>("create-settings-btn");
@@ -115,7 +139,9 @@ namespace ShaderGraphShotKey.Editor.Settings
             #region inputActionField
 
             ObjectField inputActionField = root.Q<ObjectField>("inputAction-field");
+#if ENABLE_INPUT_SYSTEM
             inputActionField.objectType = typeof(InputActionAsset);
+#endif
             inputActionField.allowSceneObjects = false;
 
             #endregion
@@ -141,8 +167,26 @@ namespace ShaderGraphShotKey.Editor.Settings
 
             #endregion
 
-            //초기 셋업을 합니다.
+#if ENABLE_INPUT_SYSTEM
             InitSetUp();
+#endif
+
+            installInputSystemBtn.RegisterCallback<MouseUpEvent>(evt =>
+            {
+                bool hasInputSystem = HasPackage(InputSystemPackageName);
+                if (!hasInputSystem)
+                {
+                    _addRequest = Client.Add(InputSystemPackageName);
+                    EditorApplication.update += Progress;
+                }
+                else
+                    Debug.Log("이미 설치되어 있습니다.");
+            });
+
+            changeBothBtn.RegisterCallback<MouseUpEvent>(evt => { ChangeInputSystemBoth(); });
+
+#if ENABLE_INPUT_SYSTEM
+            //초기 셋업을 합니다.
 
             //InputAction 생성 버튼
             createInputActionBtn.RegisterCallback<MouseUpEvent>(_ => { CreateInputAction(); });
@@ -173,39 +217,53 @@ namespace ShaderGraphShotKey.Editor.Settings
             {
                 //변경된 값 적용
                 if (evt.newValue == null)
+                {
                     _inputActionAsset = null;
-                else
-                    _inputActionAsset = (InputActionAsset) evt.newValue;
+                    return;
+                }
+
+
+                //값 적용
+                _inputActionAsset = (InputActionAsset) evt.newValue;
+
+                //다시 저장
+                EditorPrefs.SetInt("SGHKInputActionID", _inputActionAsset.GetInstanceID());
             });
 
             patchCodeBtn.RegisterCallback<MouseUpEvent>(_ =>
             {
-                if (settingsField.value == null || _settings == null) return;
-                _settings.AutoShaderGraphOverride = true;
-                autoOverride.value = true;
-                OverridePackage();
-                
-                AssetDatabase.Refresh();
+                // if (settingsField.value == null || _settings == null) return;
+                // _settings.AutoShaderGraphOverride = true;
+                // autoOverride.value = true;
+                // OverridePackage();
+                //
+                // AssetDatabase.Refresh();
+                // EditorUtility.RequestScriptReload();
             });
-            
+
             patchHintBtn.RegisterCallback<MouseUpEvent>(_ =>
             {
+                if (settingsField.value == null || _settings == null) return;
                 if (inputActionField.value == null || _inputActionAsset == null) return;
 
+                _settings.AutoShaderGraphOverride = true;
+                autoOverride.value = true;
+                //OverridePackage(); //<-풀려버리는 문제가 있어서 한번 더 넣습니다.
+
                 AddHotKeyHintToNode();
-                OverridePackage();//<-풀려버리는 문제가 있어서 한번 더 넣습니다.
                 AssetDatabase.Refresh();
+                EditorUtility.RequestScriptReload();
             });
 
             addInputActionBtn.RegisterCallback<MouseUpEvent>(_ =>
             {
                 //인풋 액션 설치
                 CreateInputAction();
-                
+
                 //새로고침
                 AssetDatabase.Refresh();
             });
-            
+
             addDefineBtn.RegisterCallback<MouseUpEvent>(_ =>
             {
                 //디파인 설치
@@ -227,11 +285,21 @@ namespace ShaderGraphShotKey.Editor.Settings
                         createSettingsBtn.text = "Create";
                         createInputActionBtn.text = "Create";
                         autoOverride.label = "Auto Shader Graph Override";
+                        addSettingsBtn.text = "Add Settings";
+                        patchCodeBtn.text = "Hot Key Code Patch";
+                        addDefineBtn.text = "Add Define";
+                        addInputActionBtn.text = "Add (Node)InputAction";
+                        patchHintBtn.text = "Hot Key Hint Patch";
                         break;
                     case ShaderGraphHotKeySettings.KLanguage.한국어:
                         createSettingsBtn.text = "생성";
                         createInputActionBtn.text = "생성";
                         autoOverride.label = "자동 쉐이더 그래프 덮어쓰기";
+                        addSettingsBtn.text = "Settings 생성";
+                        patchCodeBtn.text = "단축키 시스템 패치";
+                        addDefineBtn.text = "Define 적용";
+                        addInputActionBtn.text = "(노드)인풋 액션 생성";
+                        patchHintBtn.text = "단축키 힌트 패치";
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -268,11 +336,11 @@ namespace ShaderGraphShotKey.Editor.Settings
 
             void InitSetUp()
             {
-                int settingsid = EditorPrefs.GetInt("SGHKSettingsID", -1);
-                int Actionid = EditorPrefs.GetInt("SGHKInputActionID", -1);
+                int settingsId = EditorPrefs.GetInt("SGHKSettingsID", -1);
+                int actionId = EditorPrefs.GetInt("SGHKInputActionID", -1);
 
                 //세팅 파일이 없는 경우 기본만 띄웁니다.
-                if (settingsid == -1)
+                if (settingsId == -1)
                 {
                     languageField.Init(ShaderGraphHotKeySettings.KLanguage.English);
                     startAtShowField.value = ShaderGraphHotKeySettings.KStartUp.Always.ToString();
@@ -281,7 +349,7 @@ namespace ShaderGraphShotKey.Editor.Settings
                 else
                 {
                     //기존에 있던 것을 반영합니다.
-                    string path = AssetDatabase.GetAssetPath(settingsid);
+                    string path = AssetDatabase.GetAssetPath(settingsId);
                     if (path.Equals(string.Empty))
                     {
                         EditorPrefs.SetInt("SGHKSettingsID", -1);
@@ -318,20 +386,19 @@ namespace ShaderGraphShotKey.Editor.Settings
                     }
                 }
 
-                if (Actionid != -1)
+                if (actionId == -1) return;
+
+                //기존에 있던 것을 반영합니다.
+                string actionPath = AssetDatabase.GetAssetPath(actionId);
+
+                if (actionPath.Equals(string.Empty))
                 {
-                    //기존에 있던 것을 반영합니다.
-                    string Actionpath = AssetDatabase.GetAssetPath(Actionid);
-
-                    if (Actionpath.Equals(string.Empty))
-                    {
-                        EditorPrefs.SetInt("SGHKInputActionID", -1);
-                        return;
-                    }
-
-                    inputActionField.value = AssetDatabase.LoadAssetAtPath<InputActionAsset>(Actionpath);
-                    _inputActionAsset = (InputActionAsset) inputActionField.value;
+                    EditorPrefs.SetInt("SGHKInputActionID", -1);
+                    return;
                 }
+
+                inputActionField.value = AssetDatabase.LoadAssetAtPath<InputActionAsset>(actionPath);
+                _inputActionAsset = (InputActionAsset) inputActionField.value;
             }
 
             void SetUp(ShaderGraphHotKeySettings settings)
@@ -477,6 +544,7 @@ namespace ShaderGraphShotKey.Editor.Settings
                     PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup,
                         addHotKeyDefineToCurrentDefine);
             }
+#endif
         }
 
         //패키지를 오버라이드 시킵니다.
@@ -550,7 +618,7 @@ namespace ShaderGraphShotKey.Editor.Settings
 #endif
         }
 
-        private string DefaultSetKeyPath(Type nodeType)
+        private static string DefaultSetKeyPath(Type nodeType)
         {
             string keyboardPath = string.Empty;
 #if SHADER_GRAPH_HOTKEY
@@ -623,6 +691,23 @@ namespace ShaderGraphShotKey.Editor.Settings
             return keyboardPath;
         }
 
+        private static void Progress()
+        {
+            if (!_addRequest.IsCompleted) return;
+
+            switch (_addRequest.Status)
+            {
+                case StatusCode.Success:
+                    Debug.Log($"Installed : " + _addRequest.Result.packageId);
+                    break;
+                case >= StatusCode.Failure:
+                    Debug.Log(_addRequest.Error.message);
+                    break;
+            }
+
+            EditorApplication.update -= Progress;
+        }
+
         private static DirectoryInfo GetPackageInstalled(string packageName)
         {
             //폴더 안의 정보를 가져옵니다.
@@ -635,8 +720,9 @@ namespace ShaderGraphShotKey.Editor.Settings
             return result;
         }
 
-        private void AddHotKeyHintToNode()
+        private static void AddHotKeyHintToNode()
         {
+#if ENABLE_INPUT_SYSTEM
             const string kDefaultKey = "<Keyboard>/";
             InputActionAsset inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(NodeAssetPath);
 
@@ -664,23 +750,102 @@ namespace ShaderGraphShotKey.Editor.Settings
                 //전체 코드를 가져옵니다.
                 string text = File.ReadAllText(nodePath);
 
+                //이미 적용 완료되어 있으면 Pass
+                if (text.Contains("//HotKey\n"))
+                {
+                    Debug.Log($"{hasHotKeyNode.Key} 패치 완료");
+                    return;
+                }
+
+                text = text.Insert(0, "//HotKey\n");
+
+                //각 라인별로 자르기
                 string[] codeLines = text.Split('\r', '\n');
 
+                //단축키를 글자
                 string hotKey = hasHotKeyNode.Value.Replace(kDefaultKey, "");
 
+                //라인별로 체크
                 foreach (string codeLine in codeLines)
                 {
                     if (!codeLine.Contains("[Title(")) continue;
-                    int startIndex = codeLine.IndexOf("\")]", StringComparison.Ordinal);
-                    string afterTitleLine = codeLine.Insert(startIndex, $" ({hotKey.ToUpper()})");
+                    int lastIndex = codeLine.LastIndexOf('\"');
+                    string afterTitleLine = codeLine.Insert(lastIndex, $" ({hotKey.ToUpper()})");
                     text = text.Replace(codeLine, afterTitleLine);
                     break;
                 }
 
+                Debug.Log($"{hasHotKeyNode.Key}");
                 File.WriteAllText(nodePath, text);
+                return;
             }
-            
-            Debug.Log("단축키 힌트 적용 완료");
+#endif
+        }
+
+        private void RemoveText(string codes)
+        {
+            //제거
+            codes = codes.Replace("//HotKey\n", "");
+
+            //각 라인별로 자르기
+            string[] codeLines = codes.Split('\r', '\n');
+
+            string originCode;
+
+            //라인별로 체크
+            foreach (string codeLine in codeLines)
+            {
+                if (!codeLine.Contains("[Title(")) continue;
+                int startIndex = codeLine.LastIndexOf('(') - 1; // -1은 ' '이것을 자른 것이다.
+                int lastIndex = codeLine.LastIndexOf('\"', codeLine.Length - 3);
+
+                int deleteCount = lastIndex - startIndex;
+
+                originCode = codeLine.Remove(startIndex, deleteCount);
+
+                codes = codes.Replace(codeLine, originCode);
+                break;
+            }
+
+            Debug.Log(codes);
+        }
+
+        private static bool HasPackage(string package)
+        {
+            string jsonText = File.ReadAllText("Packages/manifest.json");
+            bool result = jsonText.Contains(package);
+
+            return result;
+        }
+
+        private static void ChangeInputSystemBoth()
+        {
+            if (!EditorUtility.DisplayDialog("Warning", "진짜로 Both할거야?", "Yes", "No")) return;
+
+            EditorPlayerSettingHelpers.oldSystemBackendsEnabled = true;
+            EditorPlayerSettingHelpers.oldSystemBackendsEnabled = true;
+            RestartEditorAndRecompileScripts();
+        }
+
+        private static void RestartEditorAndRecompileScripts(bool dryRun = false)
+        {
+            // The API here are not public. Use reflection to get to them.
+            Type editorApplicationType = typeof(EditorApplication);
+            MethodInfo restartEditorAndRecompileScripts =
+                editorApplicationType.GetMethod("RestartEditorAndRecompileScripts",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+            if (!dryRun)
+            {
+                if (restartEditorAndRecompileScripts != null)
+                    restartEditorAndRecompileScripts.Invoke(null, null);
+            }
+            else if (restartEditorAndRecompileScripts == null)
+                throw new MissingMethodException(editorApplicationType.FullName, "RestartEditorAndRecompileScripts");
+        }
+
+        private static void EndCompile()
+        {
+            Debug.Log("컴파일 끝");
         }
     }
 }

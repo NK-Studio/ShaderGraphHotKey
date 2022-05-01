@@ -1,33 +1,45 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/ShaderGraphHotKey/Editor/Settings/button.uss?fileID=7433441132597879392&amp;guid=ad777cf480da6ea4c9665741e2325fd5&amp;type=3#button" />
     <ui:VisualElement name="title" style="flex-direction: row; align-items: center; justify-content: center;">
         <ui:VisualElement name="icon" style="background-image: url(&apos;project://database/Assets/ShaderGraphHotKey/Icon/shift.png?fileID=2800000&amp;guid=c0c93ba1ca8a49f4e8e86da7ecf6f69a&amp;type=3#shift&apos;); width: 32px; height: 35px; -unity-background-scale-mode: scale-to-fit; margin-left: 6px; margin-right: 6px; margin-top: 6px; margin-bottom: 6px;" />
         <ui:Label text="ShaderGraph Hot Key" display-tooltip-when-elided="true" style="font-size: 21px; -unity-text-align: middle-center; margin-top: 10px; margin-bottom: 10px;" />
     </ui:VisualElement>
     <ui:VisualElement style="width: 100%; height: 100%; align-items: stretch; justify-content: flex-start;">
-        <ui:VisualElement>
+        <ui:VisualElement style="justify-content: center; align-items: auto;">
             <ui:VisualElement name="InputActionField" style="flex-direction: row;">
-                <uie:ObjectField label="InputAction" name="inputAction-field" style="flex-shrink: 1; margin-right: 0;" />
+                <uie:ObjectField label="InputAction" name="inputAction-field" style="flex-shrink: 1;" />
                 <ui:Button text="Create" display-tooltip-when-elided="true" name="create-inputAction-btn" />
             </ui:VisualElement>
             <ui:VisualElement name="SettingsField" style="flex-direction: row; justify-content: space-between;">
-                <uie:ObjectField label="Settings" name="settings-field" style="flex-shrink: 1; margin-right: 0;" />
+                <uie:ObjectField label="Settings" name="settings-field" style="flex-shrink: 1; min-width: 300px;" />
                 <ui:Button text="Create" display-tooltip-when-elided="true" name="create-settings-btn" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement style="align-items: center; justify-content: center;">
-            <ui:VisualElement style="background-color: rgb(38, 38, 38); width: 319px; height: 2px; margin-top: 6px; margin-bottom: 6px;" />
+        <ui:VisualElement name="Line" style="align-items: center; justify-content: space-around; padding-top: 6px; padding-bottom: 6px;">
+            <ui:VisualElement style="background-color: rgb(38, 38, 38); width: 90%; height: 3px; justify-content: space-between;" />
         </ui:VisualElement>
-        <ui:VisualElement name="Buttons" style="margin-top: 8px;">
-            <ui:Button text="Add Settings" display-tooltip-when-elided="true" name="add-settings-btn" style="height: 31px; font-size: 18px;" />
-            <ui:Button text="Hot Key Code Patch - 1" display-tooltip-when-elided="true" name="override-1-btn" style="height: 31px; font-size: 18px;" />
-            <ui:Button text="Add Define" display-tooltip-when-elided="true" name="add-define" style="height: 31px; font-size: 18px;" />
-            <ui:Button text="Add InputAction" display-tooltip-when-elided="true" name="add-inputAction" style="height: 31px; font-size: 18px;" />
-            <ui:Button text="Hot Key Code Patch - 2" display-tooltip-when-elided="true" name="override-2-btn" style="height: 31px; font-size: 18px;" />
+        <ui:VisualElement name="Buttons" style="margin-top: 0; margin-left: 8px; margin-right: 8px; margin-bottom: 0; align-items: auto;">
+            <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-left: 7px; width: 203px;">
+                <ui:VisualElement style="background-color: rgb(255, 146, 146); width: 12px; height: 14px;" />
+                <ui:Button text="Install InputSystem" display-tooltip-when-elided="true" name="Install-InputSystem-btn" class="buttons" style="height: 31px; font-size: 18px; flex-direction: row; -unity-text-align: middle-right; white-space: nowrap; justify-content: space-between; align-items: flex-start;" />
+            </ui:VisualElement>
+            <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-left: 7px; width: 203px;">
+                <ui:VisualElement style="background-color: rgb(255, 146, 146); width: 12px; height: 14px;" />
+                <ui:Button text="Change To Both" display-tooltip-when-elided="true" name="change-both-btn" class="buttons" style="height: 31px; font-size: 18px; flex-direction: row; -unity-text-align: middle-right; white-space: nowrap; justify-content: space-between; align-items: flex-start;" />
+            </ui:VisualElement>
+            <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-left: 7px; width: 163px;">
+                <ui:VisualElement style="background-color: rgb(255, 146, 146); width: 14px; height: 14px;" />
+                <ui:Button text="Add Settings" display-tooltip-when-elided="true" name="add-settings-btn" class="buttons" style="height: 31px; font-size: 18px; flex-direction: row; -unity-text-align: middle-right; white-space: nowrap; justify-content: space-between; align-items: flex-start;" />
+            </ui:VisualElement>
+            <ui:Button text="Add Define" display-tooltip-when-elided="true" name="add-define" class="buttons" style="height: 31px; font-size: 18px;" />
+            <ui:Button text="Hot Key Code Patch" display-tooltip-when-elided="true" name="override-1-btn" class="buttons" style="height: 31px; font-size: 18px;" />
+            <ui:Button text="Add InputAction" display-tooltip-when-elided="true" name="add-inputAction" class="buttons" style="height: 31px; font-size: 18px;" />
+            <ui:Button text="Hint Code Patch" display-tooltip-when-elided="true" name="override-2-btn" class="buttons" style="height: 31px; font-size: 18px;" />
         </ui:VisualElement>
-        <ui:VisualElement style="align-items: center; justify-content: center;">
-            <ui:VisualElement style="background-color: rgb(38, 38, 38); width: 319px; height: 2px; margin-top: 6px; margin-bottom: 6px;" />
+        <ui:VisualElement name="Line" style="align-items: center; justify-content: space-around; padding-top: 6px; padding-bottom: 6px;">
+            <ui:VisualElement style="background-color: rgb(38, 38, 38); width: 90%; height: 3px; justify-content: space-between;" />
         </ui:VisualElement>
-        <ui:VisualElement style="width: 331px;">
+        <ui:VisualElement>
             <ui:Toggle label="Auto Shader Graph Override" name="auto-override" />
             <uie:EnumField label="Language" name="language-field" />
             <ui:DropdownField label="Start At Show" index="-1" name="startAtShow-field" />

@@ -5,7 +5,9 @@ using UnityEditor.Graphing;
 using UnityEditor.ShaderGraph;
 using UnityEditor.ShaderGraph.Drawing;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+#endif
 using UnityEngine.UIElements;
 #if SHADER_GRAPH_HOTKEY
 
@@ -34,8 +36,9 @@ namespace ShaderGraphShotKey.Editor
 
         private string _currentNode = string.Empty;
 
+#if ENABLE_INPUT_SYSTEM
         private InputActionAsset _inputActionAsset;
-
+#endif
         public KeyboardHotKey(MaterialGraphView graphView, GraphData graphData)
         {
             GraphView = graphView;

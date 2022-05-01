@@ -1,0 +1,5 @@
+.buttons {
+    margin-top: 3px;
+    margin-bottom: 3px;
+    -unity-text-align: upper-right;
+}
