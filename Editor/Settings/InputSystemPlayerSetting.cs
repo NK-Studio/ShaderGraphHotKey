@@ -17,7 +17,7 @@ namespace NKStudio.ShaderGraph.HotKey
             get
             {
 #if UNITY_2020_2_OR_NEWER
-                var property = GetPropertyOrNull(kActiveInputHandler);
+                SerializedProperty property = GetPropertyOrNull(kActiveInputHandler);
                 return property == null || ActiveInputHandlerToTuple(property.intValue).newSystemEnabled;
 #else
                 var property = GetPropertyOrNull(kEnableNewSystemProperty);
@@ -27,10 +27,10 @@ namespace NKStudio.ShaderGraph.HotKey
             set
             {
 #if UNITY_2020_2_OR_NEWER
-                var property = GetPropertyOrNull(kActiveInputHandler);
+                SerializedProperty property = GetPropertyOrNull(kActiveInputHandler);
                 if (property != null)
                 {
-                    var tuple = ActiveInputHandlerToTuple(property.intValue);
+                    (bool newSystemEnabled, bool oldSystemEnabled) tuple = ActiveInputHandlerToTuple(property.intValue);
                     tuple.newSystemEnabled = value;
                     property.intValue = TupleToActiveInputHandler(tuple);
                     property.serializedObject.ApplyModifiedProperties();
@@ -63,7 +63,7 @@ namespace NKStudio.ShaderGraph.HotKey
             get
             {
 #if UNITY_2020_2_OR_NEWER
-                var property = GetPropertyOrNull(kActiveInputHandler);
+                SerializedProperty property = GetPropertyOrNull(kActiveInputHandler);
                 return property == null || ActiveInputHandlerToTuple(property.intValue).oldSystemEnabled;
 #else
                 var property = GetPropertyOrNull(kDisableOldSystemProperty);
@@ -73,10 +73,10 @@ namespace NKStudio.ShaderGraph.HotKey
             set
             {
 #if UNITY_2020_2_OR_NEWER
-                var property = GetPropertyOrNull(kActiveInputHandler);
+                SerializedProperty property = GetPropertyOrNull(kActiveInputHandler);
                 if (property != null)
                 {
-                    var tuple = ActiveInputHandlerToTuple(property.intValue);
+                    (bool newSystemEnabled, bool oldSystemEnabled) tuple = ActiveInputHandlerToTuple(property.intValue);
                     tuple.oldSystemEnabled = value;
                     property.intValue = TupleToActiveInputHandler(tuple);
                     property.serializedObject.ApplyModifiedProperties();
@@ -155,10 +155,10 @@ namespace NKStudio.ShaderGraph.HotKey
 
         private static SerializedProperty GetPropertyOrNull(string name)
         {
-            var playerSettings = Resources.FindObjectsOfTypeAll<PlayerSettings>().FirstOrDefault();
+            PlayerSettings playerSettings = Resources.FindObjectsOfTypeAll<PlayerSettings>().FirstOrDefault();
             if (playerSettings == null)
                 return null;
-            var playerSettingsObject = new SerializedObject(playerSettings);
+            SerializedObject playerSettingsObject = new SerializedObject(playerSettings);
             return playerSettingsObject.FindProperty(name);
         }
     }

@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -12,11 +11,12 @@ namespace NKStudio.ShaderGraph.HotKey
 {
     public class NodeInputAssetObserver : AssetPostprocessor
     {
+#if ENABLE_INPUT_SYSTEM && ENABLE_SHADERGRAPH && SHADER_GRAPH_HOTKEY
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
             string[] movedAssets,
             string[] movedFromAssetPaths, bool didDomainReload)
         {
-#if ENABLE_INPUT_SYSTEM
+
             int actionId = EditorPrefs.GetInt("SGHKInputActionID", -1);
 
             //기존에 있던 것을 반영합니다.
@@ -103,10 +103,10 @@ namespace NKStudio.ShaderGraph.HotKey
                 EditorPrefs.SetBool("UpdateHint", true);
                 //EditorApplication.ExecuteMenuItem("Window/ShaderGraph HotKey/ShaderGraphSettings");
             }
-#endif
+
         }
 
-#if SHADER_GRAPH_HOTKEY
+
         private static void RemoveHotKeyDefine()
         {
             const string hotKeyDefine = "SHADER_GRAPH_HOTKEY";

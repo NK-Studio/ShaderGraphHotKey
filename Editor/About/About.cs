@@ -21,7 +21,7 @@ namespace NKStudio.ShaderGraph.HotKey
             VisualElement root = rootVisualElement;
 
             // Import UXML
-            var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShaderGraphHotKey/Editor/About/About.uxml");
+            VisualTreeAsset visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShaderGraphHotKey/Editor/About/About.uxml");
             VisualElement container = visualTree.Instantiate();
             root.Add(container);
         }

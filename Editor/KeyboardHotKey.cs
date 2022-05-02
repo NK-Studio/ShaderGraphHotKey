@@ -6,7 +6,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 using UnityEngine.UIElements;
-#if SHADER_GRAPH_HOTKEY
+
+#if ENABLE_SHADERGRAPH && SHADER_GRAPH_HOTKEY
 using UnityEditor.Graphing;
 using UnityEditor.ShaderGraph;
 using UnityEditor.ShaderGraph.Drawing;
@@ -21,7 +22,6 @@ public class GraphData
 
 public class AbstractMaterialNode
 {
-    
 }
 #endif
 
@@ -43,7 +43,7 @@ namespace NKStudio.ShaderGraph.HotKey
             GraphView = graphView;
             GraphData = graphData;
 
-#if SHADER_GRAPH_HOTKEY
+#if ENABLE_SHADERGRAPH && SHADER_GRAPH_HOTKEY
             GraphView.RegisterCallback<KeyDownEvent>(OnKeyDownEvent);
             GraphView.RegisterCallback<KeyUpEvent>(OnKeyUpEvent);
             GraphView.RegisterCallback<MouseDownEvent>(OnMouseDownEvent, TrickleDown.TrickleDown);
@@ -51,9 +51,9 @@ namespace NKStudio.ShaderGraph.HotKey
 #endif
         }
 
-#if SHADER_GRAPH_HOTKEY
         private void OnMouseDownEvent(MouseDownEvent evt)
         {
+#if ENABLE_INPUT_SYSTEM
             if (_inputActionAsset == null)
                 _inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(NodeAssetPath);
 
@@ -81,6 +81,7 @@ namespace NKStudio.ShaderGraph.HotKey
                 Debug.LogError(e + $"{_currentNode}");
                 throw;
             }
+#endif
         }
 
         private void OnKeyUpEvent(KeyUpEvent evt)
@@ -90,6 +91,7 @@ namespace NKStudio.ShaderGraph.HotKey
 
         private void OnKeyDownEvent(KeyDownEvent evt)
         {
+#if ENABLE_INPUT_SYSTEM
             if (_inputActionAsset == null)
                 _inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(NodeAssetPath);
 
@@ -108,10 +110,12 @@ namespace NKStudio.ShaderGraph.HotKey
                 _currentNode = binding.action;
                 return;
             }
+#endif
         }
 
         private static string KeycodeToPath(KeyCode keyCode)
         {
+#if SHADER_GRAPH_HOTKEY
             const string kDefaultKey = "<Keyboard>";
 
             if ((int) keyCode >= 48 && (int) keyCode <= 57)
@@ -206,12 +210,13 @@ namespace NKStudio.ShaderGraph.HotKey
                     return $"{kDefaultKey}/escape";
                     
             }
-
+#endif
             return string.Empty;
         }
 
         private void CreateNode(Func<AbstractMaterialNode> createNode, Vector2 position)
         {
+#if ENABLE_SHADERGRAPH && SHADER_GRAPH_HOTKEY
             AbstractMaterialNode node = createNode();
             DrawState drawState = node.drawState;
             Vector2 posToLocal = GraphView.contentViewContainer.WorldToLocal(position);
@@ -219,7 +224,7 @@ namespace NKStudio.ShaderGraph.HotKey
                 drawState.position.height);
             node.drawState = drawState;
             GraphData.AddNode(node);
-        }
 #endif
+        }
     }
 }
