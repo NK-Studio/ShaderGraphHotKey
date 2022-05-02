@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,12 +5,10 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace ShaderGraphHotKey.Editor.Observer
+namespace NKStudio.ShaderGraph.HotKey
 {
     public class NodeInputAssetObserver : AssetPostprocessor
     {
-        private string PreviuseData;
-
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
             string[] movedAssets,
             string[] movedFromAssetPaths, bool didDomainReload)
@@ -58,7 +55,7 @@ namespace ShaderGraphHotKey.Editor.Observer
                     //해당 단축키가 2개 이상 바인딩 되어 있다면, 다이어로그를 띄워서 방지한다.
                     if (duplicateNode.Value >= 2)
                     {
-                        List<string> DNode = new();
+                        List<string> dNode = new();
                         //Hot Key를 모두 순례를 돈다.
                         foreach (var hotKeyNode in hasHotKeyNodes)
                         {
@@ -66,15 +63,15 @@ namespace ShaderGraphHotKey.Editor.Observer
                             if (hotKeyNode.Value == duplicateNode.Key)
                             {
                                 //이름 표시
-                                DNode.Add(hotKeyNode.Key);
+                                dNode.Add(hotKeyNode.Key);
                             }
                         }
 
                         bool msg = EditorUtility.DisplayDialog("단축키 중복",
-                            $"{DNode[0]}과 {DNode[1]}의 단축키가 중복됩니다.\n 다음 중 어떤 노드의 단축키를 삭제하겠습니까?", DNode[1], DNode[0]);
+                            $"{dNode[0]}과 {dNode[1]}의 단축키가 중복됩니다.\n 다음 중 어떤 노드의 단축키를 삭제하겠습니까?", dNode[1], dNode[0]);
 
                         //값을 비웁니다.
-                        ChangeBinding(inputActionAsset, msg ? DNode[1] : DNode[0], "");
+                        ChangeBinding(inputActionAsset, msg ? dNode[1] : dNode[0], "");
 
                         //저장
                         string jData = inputActionAsset.ToJson();
@@ -84,13 +81,40 @@ namespace ShaderGraphHotKey.Editor.Observer
 
                         //새로고침
                         AssetDatabase.Refresh();
+                        
+                        //변경사항 있음
+                        if (msg)
+                        {
+                            Debug.Log("수정 되었습니다.");
+                            RemoveHotKeyDefine();
+                            EditorPrefs.SetBool("UpdateHint", true);
+                            //EditorApplication.ExecuteMenuItem("Window/ShaderGraph HotKey/ShaderGraphSettings");
+                        }
 
-                        Debug.Log("수정 되었습니다.");
+                        return;
                     }
                 }
+
+                RemoveHotKeyDefine();
+                EditorPrefs.SetBool("UpdateHint", true);
+                //EditorApplication.ExecuteMenuItem("Window/ShaderGraph HotKey/ShaderGraphSettings");
             }
         }
 
+        private static void RemoveHotKeyDefine()
+        {
+            const string hotKeyDefine = "SHADER_GRAPH_HOTKEY";
+
+            //현재 플레이어 세팅스의 디파인을 가져옵니다.
+            string defines =
+                PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+
+            string removed = defines.Replace(hotKeyDefine, "");
+
+            //프로젝트 세팅스에서 디파인 제거
+            PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup,
+                removed);
+        }
 
         private static void ChangeBinding(InputActionAsset inputActionAsset, string actionName, string path)
         {

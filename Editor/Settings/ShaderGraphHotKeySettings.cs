@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ShaderGraphShotKey.Editor.Settings
+namespace NKStudio.ShaderGraph.HotKey
 {
     public class ShaderGraphHotKeySettings : ScriptableObject
     {

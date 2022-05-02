@@ -4,9 +4,9 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-namespace ShaderGraphShotKey.Editor
+namespace NKStudio.ShaderGraph.HotKey
 {
-    public class ShaderGraphShotKeyInstaller : UnityEditor.Editor
+    public class ShaderGraphShotKeyInstaller : Editor
     {
         private const string HotKeyAssembly =
             "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"NKStudio.ShaderGraph.HotKey\")]";
@@ -48,37 +48,19 @@ namespace ShaderGraphShotKey.Editor
                     removed);
                 #endregion
             }
-            
-            EditorApplication.wantsToQuit += EditorApplicationOnwantsToQuit;
         }
         
         private static void Run()
         {
 #if SHADER_GRAPH_HOTKEY
-            Debug.Log("동작 중");
+            Debug.Log("ShaderGraph HotKey Run");
             UnityEditor.ShaderGraph.Drawing.GraphEditorView.keyboardCallback += ((view, data) =>
             {
                 KeyboardHotKey keyboardHotKey = new KeyboardHotKey(view, data);
             });
 #endif
         }
-
-        //유니티 에디터를 끄면 디파인 제거
-        private static bool EditorApplicationOnwantsToQuit()
-        {
-            //현재 플레이어 세팅스의 디파인을 가져옵니다.
-            string defines =
-                PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
-
-            string removed = defines.Replace(HotKeyDefine, "");
-
-            //프로젝트 세팅스에서 디파인 제거
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup,
-                removed);
-
-            return true;
-        }
-    
+        
         private static DirectoryInfo GetPackageInstalled(string packageName)
         {
             //폴더 안의 정보를 가져옵니다.

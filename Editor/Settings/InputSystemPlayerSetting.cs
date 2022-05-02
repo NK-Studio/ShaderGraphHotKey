@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace ShaderGraphShotKey.Editor.Settings
+namespace NKStudio.ShaderGraph.HotKey
 {
     public static class EditorPlayerSettingHelpers
     {
