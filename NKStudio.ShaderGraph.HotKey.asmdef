@@ -12,6 +12,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.shadergraph",
+            "expression": "",
+            "define": "ENABLE_SHADERGRAPH"
+        }
+    ],
     "noEngineReferences": false
 }

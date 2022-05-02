@@ -17,7 +17,6 @@ using UnityEngine.UIElements;
 using UnityEditor.ShaderGraph;
 #endif
 
-
 namespace NKStudio.ShaderGraph.HotKey
 {
 #if !SHADER_GRAPH_HOTKEY
@@ -43,6 +42,12 @@ namespace NKStudio.ShaderGraph.HotKey
 
         private static AddRequest _addRequest;
 
+#if ENABLE_SHADERGRAPH
+        private bool hasShader = true;
+#else
+private bool hasShader = false;
+#endif
+        
 #if ENABLE_INPUT_SYSTEM
         private InputActionAsset _inputActionAsset;
 #endif
@@ -59,20 +64,22 @@ namespace NKStudio.ShaderGraph.HotKey
         [InitializeOnLoadMethod]
         private static void Init()
         {
+            //세팅 파일의 GUID를 가져옵니다.
             int settingsId = EditorPrefs.GetInt("SGHKSettingsID", -1);
 
-            //세팅 파일이 없는 경우 기본만 띄웁니다.
+            //세팅 파일이 없는 경우 디폴트로 띄웁니다.
             if (settingsId == -1)
                 EditorApplication.update += ShowAtStartup;
             else
             {
-                //기존에 있는 세팅 데이터를 기반으로 오픈합니다.
+                //파일의 경로를 가져옵니다.
                 string path = AssetDatabase.GetAssetPath(settingsId);
 
+                //에셋을 로드합니다.
                 ShaderGraphHotKeySettings temporarySettings =
                     AssetDatabase.LoadAssetAtPath<ShaderGraphHotKeySettings>(path);
 
-                //없는 상태이다.
+                //로드에 실패하면 그냥 띄웁니다.
                 if (temporarySettings == null)
                 {
                     EditorApplication.update += ShowAtStartup;
@@ -80,8 +87,10 @@ namespace NKStudio.ShaderGraph.HotKey
                     return;
                 }
 
+                //temporarySettings.StartAtShow가 Always이면 true, 아니면 false를 반환합니다.
                 bool showOnStartup = temporarySettings.StartAtShow == ShaderGraphHotKeySettings.KStartUp.Always;
 
+                //Always이면 표시
                 if (showOnStartup)
                     EditorApplication.update += ShowAtStartup;
             }
@@ -92,14 +101,17 @@ namespace NKStudio.ShaderGraph.HotKey
 
         private static void ShowAtStartup()
         {
+            //유니티가 플레이모드가 아니라면 타이틀 표시
             if (!Application.isPlaying)
                 Title();
 
+            //해제
             EditorApplication.update -= ShowAtStartup;
         }
 
         private void OnDestroy()
         {
+            //제거되면 해제
             EditorApplication.update -= ShowAtStartup;
         }
 
@@ -112,8 +124,10 @@ namespace NKStudio.ShaderGraph.HotKey
 
         private static void ApplicationOnlogMessageReceived(string condition, string stacktrace, LogType type)
         {
+            //에러가 표시되었다면,
             if (type == LogType.Error)
             {
+                //그 에러가 쉐이더 그래프에 대한 GraphData에러라면, 코드 패치를 한다.
                 if (condition.Contains("GraphData"))
                 {
                     OverridePackage();
@@ -179,9 +193,7 @@ namespace NKStudio.ShaderGraph.HotKey
 
             #endregion
 
-#if ENABLE_INPUT_SYSTEM
             InitSetUp();
-#endif
 
             installInputSystemBtn.RegisterCallback<MouseUpEvent>(evt =>
             {
@@ -354,7 +366,7 @@ namespace NKStudio.ShaderGraph.HotKey
                 if (settingsField.value != null && _settings != null)
                     _settings.AutoShaderGraphOverride = autoOverride.value;
             });
-
+#endif
             void InitSetUp()
             {
                 #region InstallInputSystemEnable
@@ -363,6 +375,7 @@ namespace NKStudio.ShaderGraph.HotKey
 
                 #endregion
 
+#if ENABLE_INPUT_SYSTEM
                 #region BothEnable
 
                 bool isBoth = EditorPlayerSettingHelpers.oldSystemBackendsEnabled &&
@@ -371,7 +384,11 @@ namespace NKStudio.ShaderGraph.HotKey
                 changeBothBtn.SetEnabled(!isBoth);
 
                 #endregion
+#else
+                changeBothBtn.SetEnabled(false);
+#endif
 
+#if SHADER_GRAPH_HOTKEY
                 #region DefineEnable
 
                 string defines =
@@ -380,7 +397,10 @@ namespace NKStudio.ShaderGraph.HotKey
                 addDefineBtn.SetEnabled(!defines.Contains(HotKeyDefine));
 
                 #endregion
-
+#else
+                addDefineBtn.SetEnabled(false);
+#endif
+                //에셋 파일들의 GUID를 가져옵니다.
                 int settingsId = EditorPrefs.GetInt("SGHKSettingsID", -1);
                 int actionId = EditorPrefs.GetInt("SGHKInputActionID", -1);
 
@@ -451,6 +471,7 @@ namespace NKStudio.ShaderGraph.HotKey
                     }
                     else
                     {
+#if ENABLE_INPUT_SYSTEM
                         InputActionAsset actionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(actionPath);
                         if (actionAsset == null)
                         {
@@ -463,16 +484,17 @@ namespace NKStudio.ShaderGraph.HotKey
                             inputActionField.value = AssetDatabase.LoadAssetAtPath<InputActionAsset>(actionPath);
                             _inputActionAsset = (InputActionAsset) inputActionField.value;
                         }
+#endif
                     }
                 }
-
+#if ENABLE_INPUT_SYSTEM
                 #region PatchCodeEnable
 
                 if (settingsField.value == null || _settings == null || inputActionField.value == null ||
                     _inputActionAsset == null)
                 {
-                    patchCodeBtn.SetEnabled(false);
                     autoOverride.value = false;
+                    patchCodeBtn.SetEnabled(false);
                     autoOverride.SetEnabled(false);
                 }
                 else
@@ -482,8 +504,9 @@ namespace NKStudio.ShaderGraph.HotKey
                 }
 
                 #endregion
+#endif
             }
-
+#if ENABLE_INPUT_SYSTEM
             void SetUp(ShaderGraphHotKeySettings settings)
             {
                 //다시 저장
