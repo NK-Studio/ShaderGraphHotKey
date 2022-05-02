@@ -198,22 +198,27 @@ namespace NKStudio.ShaderGraph.HotKey
             //초기화
             InitSetUp();
 
-#if ENABLE_INPUT_SYSTEM
+
             installInputSystemBtn.RegisterCallback<MouseUpEvent>(evt =>
             {
-                bool hasInputSystem = HasPackage(InputSystemPackageName);
-                if (!hasInputSystem)
+#if !ENABLE_INPUT_SYSTEM
+
+                bool AllowInstallInputSystem = EditorUtility.DisplayDialog("InputSystem Install", "인풋 시스템을 설치하겠습니까?", "네", "아니오");
+
+                if (AllowInstallInputSystem)
                 {
                     _addRequest = Client.Add(InputSystemPackageName);
-                    EditorApplication.update += Progress;
+                    EditorApplication.update += Progress;    
                 }
-                else
-                    Debug.Log("이미 설치되어 있습니다.");
+#else
+                Debug.Log("이미 설치되어 있습니다.");
+#endif
             });
 
             //Active Handling을 Both로 변경합니다.
             changeBothBtn.RegisterCallback<MouseUpEvent>(evt => { ChangeInputSystemBoth(); });
 
+#if ENABLE_INPUT_SYSTEM
             //InputAction 생성 버튼
             createInputActionBtn.RegisterCallback<MouseUpEvent>(_ => { CreateInputAction(); });
 #endif
@@ -724,8 +729,8 @@ namespace NKStudio.ShaderGraph.HotKey
                     addHotKeyDefineToCurrentDefine);
             }
 #endif
-
         }
+
         //패키지를 오버라이드 시킵니다.
         private static void OverridePackage()
         {
@@ -876,7 +881,7 @@ namespace NKStudio.ShaderGraph.HotKey
             switch (_addRequest.Status)
             {
                 case StatusCode.Success:
-                    Debug.Log($"Installed : " + _addRequest.Result.packageId);
+                    Debug.Log("Install success");
                     break;
                 case >= StatusCode.Failure:
                     Debug.Log(_addRequest.Error.message);
