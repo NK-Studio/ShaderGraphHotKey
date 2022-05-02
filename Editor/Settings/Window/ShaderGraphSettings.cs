@@ -9,7 +9,9 @@ using UnityEditor.PackageManager.Requests;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+#endif
 using UnityEngine.UIElements;
 #if SHADER_GRAPH_HOTKEY
 using UnityEditor.ShaderGraph;
@@ -18,6 +20,12 @@ using UnityEditor.ShaderGraph;
 
 namespace NKStudio.ShaderGraph.HotKey
 {
+#if !SHADER_GRAPH_HOTKEY
+    public class InputActionAsset
+    {
+    }
+#endif
+
     public class ShaderGraphSettings : EditorWindow
     {
         private const string NodeAssetPath = "Assets/Settings/Node Controls.inputactions";
@@ -145,9 +153,7 @@ namespace NKStudio.ShaderGraph.HotKey
             #region inputActionField
 
             ObjectField inputActionField = root.Q<ObjectField>("inputAction-field");
-#if ENABLE_INPUT_SYSTEM
             inputActionField.objectType = typeof(InputActionAsset);
-#endif
             inputActionField.allowSceneObjects = false;
 
             #endregion
@@ -899,7 +905,7 @@ namespace NKStudio.ShaderGraph.HotKey
         /// </summary>
         private static void RemoveAllHint()
         {
-            #if false
+#if false
             InputActionAsset inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(NodeAssetPath);
 
             foreach (var actionMap in inputActionAsset.actionMaps)
@@ -988,7 +994,7 @@ namespace NKStudio.ShaderGraph.HotKey
         {
             //세팅 파일의 GUID를 가져옵니다.
             int settingsId = EditorPrefs.GetInt("SGHKSettingsID", -1);
-            
+
             //-1이 아니라면 -> 없는게 아니라면,
             if (settingsId != -1)
             {
@@ -1006,15 +1012,15 @@ namespace NKStudio.ShaderGraph.HotKey
                     {
                         //쉐이더 그래프의 경로를 가져옵니다.
                         DirectoryInfo shaderGraphPackage = GetPackageInstalled(ShaderGraphPackageName);
-                        
+
                         //해당 경로에서 GraphEditorView를 가져옵니다.
                         string filePath = $"{shaderGraphPackage.FullName}/Editor/Drawing/Views/GraphEditorView.cs";
 
                         //해당 파일 데이터 객체로 만듭니다.
-                        FileInfo file = new (filePath);
+                        FileInfo file = new(filePath);
 
                         //null -> return
-                        Assert.IsNotNull(file,"file != null");
+                        Assert.IsNotNull(file, "file != null");
 
                         //전체 코드를 가져옵니다.
                         string text = File.ReadAllText(filePath);

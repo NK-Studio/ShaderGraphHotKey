@@ -1,17 +1,15 @@
 using System;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.Graphing;
-using UnityEditor.ShaderGraph;
-using UnityEditor.ShaderGraph.Drawing;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 using UnityEngine.UIElements;
-
 #if SHADER_GRAPH_HOTKEY
-
+using UnityEditor.Graphing;
+using UnityEditor.ShaderGraph;
+using UnityEditor.ShaderGraph.Drawing;
 #else
 public class MaterialGraphView
 {

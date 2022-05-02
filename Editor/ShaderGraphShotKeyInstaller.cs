@@ -20,8 +20,13 @@ namespace NKStudio.ShaderGraph.HotKey
         {
             DirectoryInfo shaderGraphPackage = GetPackageInstalled(PackageName);
 
-            Assert.IsNotNull(shaderGraphPackage, "쉐이더 그래프가 설치되어 있지 않습니다.");
-
+            //쉐이더 그래프가 설치되어 있지 않습니다.
+            if (shaderGraphPackage == null)
+            {
+                Debug.LogError("쉐이더 그래프가 설치되어 있지 않습니다.");
+                return;
+            }
+            
             string filePath = $"{shaderGraphPackage.FullName}/Editor/Drawing/Views/GraphEditorView.cs";
             FileInfo file = new (filePath);
 
