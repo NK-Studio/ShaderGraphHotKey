@@ -16,7 +16,7 @@
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="Buttons">
-            <ui:Foldout text="1. Setup">
+            <ui:Foldout text="1. Setup" name="first-Foldout">
                 <ui:VisualElement name="Buttons">
                     <ui:VisualElement class="button-area-layout" style="justify-content: space-between; flex-shrink: 0;">
                         <ui:Label text="Install InputSystem" display-tooltip-when-elided="true" style="-unity-text-align: middle-left;" />
@@ -28,7 +28,7 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:Foldout>
-            <ui:Foldout text="2. Setup" style="margin-top: 3px; margin-bottom: 3px;">
+            <ui:Foldout text="2. Setup" name="two-Foldout" value="false" style="margin-top: 3px; margin-bottom: 3px;">
                 <ui:VisualElement name="Buttons">
                     <ui:VisualElement class="button-area-layout" style="justify-content: space-between; flex-shrink: 0;">
                         <ui:Label text="Add Settings" display-tooltip-when-elided="true" style="white-space: nowrap; -unity-text-align: middle-left;" />
@@ -44,7 +44,7 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:Foldout>
-            <ui:Foldout text="3. Setup" style="display: flex; margin-top: 3px; margin-bottom: 3px;">
+            <ui:Foldout text="3. Setup" name="three-Foldout" value="false" style="display: flex; margin-top: 3px; margin-bottom: 3px;">
                 <ui:VisualElement name="Buttons">
                     <ui:VisualElement class="button-area-layout" style="justify-content: space-between; flex-shrink: 0;">
                         <ui:Label text="ShaderGraph Code Patch" display-tooltip-when-elided="true" style="white-space: nowrap; -unity-text-align: middle-left;" />

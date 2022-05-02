@@ -63,17 +63,17 @@ namespace NKStudio.ShaderGraph.HotKey
         [InitializeOnLoadMethod]
         private static void Init()
         {
-#if ENABLE_SHADERGRAPH && ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM
             //세팅 파일의 GUID를 가져옵니다.
-            int settingsId = EditorPrefs.GetInt("SGHKSettingsID", -1);
+            string settingsGUID = EditorPrefs.GetString("SGHKSettingsID", string.Empty);
 
             //세팅 파일이 없는 경우 디폴트로 띄웁니다.
-            if (settingsId == -1)
+            if (string.IsNullOrEmpty(settingsGUID))
                 EditorApplication.update += ShowAtStartup;
             else
             {
                 //파일의 경로를 가져옵니다.
-                string path = AssetDatabase.GetAssetPath(settingsId);
+                string path = AssetDatabase.GUIDToAssetPath(settingsGUID);
 
                 //에셋을 로드합니다.
                 ShaderGraphHotKeySettings temporarySettings =
@@ -83,7 +83,7 @@ namespace NKStudio.ShaderGraph.HotKey
                 if (temporarySettings == null)
                 {
                     EditorApplication.update += ShowAtStartup;
-                    EditorPrefs.SetInt("SGHKSettingsID", -1);
+                    EditorPrefs.SetString("SGHKSettingsID", string.Empty);
                     return;
                 }
 
@@ -95,13 +95,15 @@ namespace NKStudio.ShaderGraph.HotKey
                     EditorApplication.update += ShowAtStartup;
             }
 
+#if ENABLE_SHADERGRAPH && ENABLE_INPUT_SYSTEM
             Application.logMessageReceived += ApplicationOnlogMessageReceived;
             AssemblyReloadEvents.afterAssemblyReload += EndCompile;
+#endif
+
 #else
             EditorApplication.update += ShowAtStartup;
 #endif
         }
-
 
         private static void ShowAtStartup()
         {
@@ -195,53 +197,92 @@ namespace NKStudio.ShaderGraph.HotKey
 
             #endregion
 
+            #region Foldout
+
+            Foldout firstFoldout = root.Q<Foldout>("first-Foldout");
+            Foldout twoFoldout = root.Q<Foldout>("two-Foldout");
+            Foldout threeFoldout = root.Q<Foldout>("three-Foldout");
+
+            #endregion
+
             //초기화
             InitSetUp();
-
 
             installInputSystemBtn.RegisterCallback<MouseUpEvent>(evt =>
             {
 #if !ENABLE_INPUT_SYSTEM
+                bool allowInstallInputSystem;
 
-                bool AllowInstallInputSystem = EditorUtility.DisplayDialog("InputSystem Install", "인풋 시스템을 설치하겠습니까?", "네", "아니오");
+                if (HotKeyUtility.IsSystemLanguageKorean())
+                    allowInstallInputSystem = EditorUtility.DisplayDialog("InputSystem 설치 마법사",
+                        "InputSystem 패키지를 설치하겠습니까?", "네", "아니오");
+                else
+                    allowInstallInputSystem = EditorUtility.DisplayDialog("InputSystem Install",
+                        "Do you want to install the InputSystem package?", "Yes", "No");
 
-                if (AllowInstallInputSystem)
-                {
-                    _addRequest = Client.Add(InputSystemPackageName);
-                    EditorApplication.update += Progress;    
-                }
+                if (!allowInstallInputSystem) return;
+
+                _addRequest = Client.Add(InputSystemPackageName);
+                EditorApplication.update += Progress;
+
+                //설치 진행 중
+                if (HotKeyUtility.IsSystemLanguageKorean())
+                    Debug.Log("설치 진행중...");
+                else
+                    Debug.Log("Progress...");
 #else
                 Debug.Log("이미 설치되어 있습니다.");
 #endif
             });
 
+#if ENABLE_INPUT_SYSTEM
             //Active Handling을 Both로 변경합니다.
             changeBothBtn.RegisterCallback<MouseUpEvent>(evt => { ChangeInputSystemBoth(); });
+#endif
 
-#if ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM && ENABLE_SHADERGRAPH
             //InputAction 생성 버튼
             createInputActionBtn.RegisterCallback<MouseUpEvent>(_ => { CreateInputAction(); });
 #endif
-#if ENABLE_INPUT_SYSTEM && ENABLE_SHADERGRAPH
+
+            #region AddSettings
+
             //Settings파일 생성 버튼
             addSettingsBtn.RegisterCallback<MouseUpEvent>(_ => { InstallSettings(); });
             createSettingsBtn.RegisterCallback<MouseUpEvent>(_ => { InstallSettings(); });
 
+            #endregion
+
+#if ENABLE_INPUT_SYSTEM
             //세팅 필드 변화 체크
             settingsField.RegisterValueChangedCallback(evt =>
             {
-                if (settingsField.value == null)
+                if (evt.newValue == false)
                 {
-                    settingsField.SetEnabled(true);
-                    Reset();
+                    #region Reset
+
+                    //모두 초기화
+                    EditorPrefs.SetString("SGHKSettingsID", string.Empty);
+                    languageField.Init(ShaderGraphHotKeySettings.KLanguage.English);
+                    startAtShowField.index = 0;
+                    startAtShowField.SetEnabled(false);
+                    autoOverride.value = false;
+
+                    #endregion
                 }
                 else
                 {
-                    settingsField.SetEnabled(false);
-
-                    //변경된 값 적용
+                    //저장
                     _hotKeySettings = (ShaderGraphHotKeySettings) evt.newValue;
                     settingsField.value = _hotKeySettings;
+                    startAtShowField.SetEnabled(true);
+
+                    if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(_hotKeySettings.GetInstanceID(), out string guid,
+                            out long localId))
+
+                    {
+                        EditorPrefs.SetString("SGHKSettingsID", guid);
+                    }
 
                     //세팅
                     SetUp(_hotKeySettings);
@@ -274,8 +315,14 @@ namespace NKStudio.ShaderGraph.HotKey
                     //값 적용
                     _inputActionAsset = (InputActionAsset) evt.newValue;
 
-                    //다시 저장
-                    EditorPrefs.SetInt("SGHKInputActionID", _inputActionAsset.GetInstanceID());
+                    if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(_inputActionAsset.GetInstanceID(),
+                            out string guid,
+                            out long localId))
+
+                    {
+                        //다시 저장
+                        EditorPrefs.SetString("SGHKInputActionID", guid);
+                    }
                 }
 
 
@@ -391,12 +438,38 @@ namespace NKStudio.ShaderGraph.HotKey
                 addSettingsBtn.SetEnabled(false);
                 addInputActionBtn.SetEnabled(false);
                 patchCodeBtn.SetEnabled(false);
+                firstFoldout.value = true;
+                twoFoldout.value = false;
+                threeFoldout.value = false;
+                twoFoldout.SetEnabled(false);
+                threeFoldout.SetEnabled(false);
 #else
-                installInputSystemBtn.SetEnabled(true);
+                installInputSystemBtn.SetEnabled(false);
                 createInputActionBtn.SetEnabled(true);
+
+                if (HotKeyUtility.HasSettingsFile())
+                {
+                    addSettingsBtn.SetEnabled(false);
+                    createSettingsBtn.SetEnabled(false);
+                    patchCodeBtn.SetEnabled(true);
+                }
+                else
+                {
+                    addSettingsBtn.SetEnabled(true);
+                    createSettingsBtn.SetEnabled(true);
+
+                    firstFoldout.value = false;
+                    twoFoldout.SetEnabled(true);
+                    twoFoldout.value = true;
+                    threeFoldout.SetEnabled(false);
+                    threeFoldout.value = false;
+
+                    patchCodeBtn.SetEnabled(false);
+                }
 #endif
 
 #if ENABLE_INPUT_SYSTEM
+
                 #region BothEnable
 
                 bool isBoth = EditorPlayerSettingHelpers.oldSystemBackendsEnabled &&
@@ -405,6 +478,7 @@ namespace NKStudio.ShaderGraph.HotKey
                 changeBothBtn.SetEnabled(!isBoth);
 
                 #endregion
+
 #else
                 changeBothBtn.SetEnabled(false);
 #endif
@@ -424,16 +498,22 @@ namespace NKStudio.ShaderGraph.HotKey
                 addDefineBtn.SetEnabled(false);
 #endif
 
+                #region ToolTip
+
+                ToolTip();
+
+                #endregion
+
                 #region GetGUID
 
                 //에셋 파일들의 GUID를 가져옵니다.
-                int settingsId = EditorPrefs.GetInt("SGHKSettingsID", -1);
-                int actionId = EditorPrefs.GetInt("SGHKInputActionID", -1);
+                string settingsId = EditorPrefs.GetString("SGHKSettingsID", string.Empty);
+                string actionId = EditorPrefs.GetString("SGHKInputActionID", string.Empty);
 
                 #endregion
 
                 //세팅 파일이 없는 경우 기본만 띄웁니다.
-                if (settingsId == -1)
+                if (string.IsNullOrEmpty(settingsId))
                 {
                     //영어로 설정
                     languageField.Init(ShaderGraphHotKeySettings.KLanguage.English);
@@ -452,17 +532,17 @@ namespace NKStudio.ShaderGraph.HotKey
                 else
                 {
                     //실제 경로를 가져옵니다.
-                    string path = AssetDatabase.GetAssetPath(settingsId);
+                    string path = AssetDatabase.GUIDToAssetPath(settingsId);
 
                     //가져왔을때 문제가 있을 경우
                     if (string.IsNullOrEmpty(path))
                     {
                         //-1로 초기화
-                        EditorPrefs.SetInt("SGHKSettingsID", -1);
+                        EditorPrefs.SetString("SGHKSettingsID", string.Empty);
 
 #if ENABLE_INPUT_SYSTEM
-                    //세팅 파일 추가 버튼 활성화
-                    addSettingsBtn.SetEnabled(true);
+                        //세팅 파일 추가 버튼 활성화
+                        addSettingsBtn.SetEnabled(true);
 #endif
                     }
                     else
@@ -475,8 +555,8 @@ namespace NKStudio.ShaderGraph.HotKey
                         if (settings)
                         {
 #if ENABLE_INPUT_SYSTEM
-                    //세팅 파일 추가 버튼 활성화
-                    addSettingsBtn.SetEnabled(false);
+                            //세팅 파일 추가 버튼 활성화
+                            addSettingsBtn.SetEnabled(false);
 #endif
 
                             //필드와 세팅스에 참조
@@ -487,13 +567,8 @@ namespace NKStudio.ShaderGraph.HotKey
                             languageField.Init(_hotKeySettings.Language);
 
                             //언어 패키지를 가져온다.
-                            var startAtShowLanguage =
-                                _hotKeySettings.Language == ShaderGraphHotKeySettings.KLanguage.English
-                                    ? _hotKeySettings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.English]
-                                    : _hotKeySettings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.한국어];
-
-                            //StartAtShow 언어 설정
-                            startAtShowField.choices = startAtShowLanguage;
+                            startAtShowField.choices = ShaderGraphHotKeySettings.GetLanguageScript(settings.Language);
+                            ;
 
                             //인덱스 설정
                             startAtShowField.index = (int) _hotKeySettings.StartAtShow;
@@ -511,19 +586,19 @@ namespace NKStudio.ShaderGraph.HotKey
 
 #if ENABLE_INPUT_SYSTEM
                 //액션 인풋이 없는 경우 기본적으로 띄웁니다.
-                if (actionId == -1)
+                if (string.IsNullOrEmpty(actionId))
                     addInputActionBtn.SetEnabled(true);
                 else
                 {
                     //가져왔을때 문제가 없을 경우
-                    string actionPath = AssetDatabase.GetAssetPath(actionId);
+                    string actionPath = AssetDatabase.GUIDToAssetPath(actionId);
 
                     //가져왔을때 문제가 있을 경우
                     if (string.IsNullOrEmpty(actionPath))
                     {
                         //-1로 초기화
-                        EditorPrefs.SetInt("SGHKInputActionID", -1);
-                        
+                        EditorPrefs.SetString("SGHKInputActionID", string.Empty);
+
                         //인풋 액션 파일 추가 버튼 활성화
                         addInputActionBtn.SetEnabled(true);
                     }
@@ -531,7 +606,7 @@ namespace NKStudio.ShaderGraph.HotKey
                     {
                         //실제 파일로 처리한다.
                         InputActionAsset actionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(actionPath);
-                        
+
                         if (actionAsset)
                         {
                             addInputActionBtn.SetEnabled(false);
@@ -541,7 +616,7 @@ namespace NKStudio.ShaderGraph.HotKey
                         else
                         {
                             addInputActionBtn.SetEnabled(true);
-                            EditorPrefs.SetInt("SGHKInputActionID", -1);
+                            EditorPrefs.SetString("SGHKInputActionID", string.Empty);
                         }
                     }
                 }
@@ -564,6 +639,74 @@ namespace NKStudio.ShaderGraph.HotKey
                 // #endregion
             }
 
+            void ToolTip()
+            {
+                if (HotKeyUtility.HasSettingsFile())
+                {
+                    if (_hotKeySettings.Language == ShaderGraphHotKeySettings.KLanguage.한국어)
+                    {
+                        installInputSystemBtn.tooltip = "쉐이더 그래프 핫 키는 Input System을 의존합니다." +
+                                                        "따라서 해당 버튼을 누르면 Input System템을 설치합니다.";
+
+                        changeBothBtn.tooltip = "기존 프로젝트가 Old-Input System을 사용중이라면, Both를 눌러서 호환 시킬 수 있습니다.";
+                        addSettingsBtn.tooltip = "세팅 파일을 생성합니다.";
+
+#if ENABLE_SHADERGRAPH
+                        patchCodeBtn.tooltip = "쉐이더 그래프 코드에 패치를 합니다.";
+#else
+                        patchCodeBtn.tooltip = "쉐이더 그래프 패키지가 필요합니다.";
+#endif
+                    }
+                    else
+                    {
+                        installInputSystemBtn.tooltip = "ShaderGraph HotKey relies on the Input System." +
+                                                        "Therefore, if you press the corresponding button, the Input System system is installed.";
+
+                        changeBothBtn.tooltip =
+                            "If your existing project is using the Old-Input System, you can make it compatible by pressing Both.";
+                        addSettingsBtn.tooltip = "Create a settings file.";
+
+#if ENABLE_SHADERGRAPH
+                        patchCodeBtn.tooltip = "Patch the ShaderGraph code.";
+#else
+                        patchCodeBtn.tooltip = "ShaderGraph package is required.";
+#endif
+                    }
+                }
+                else
+                {
+                    if (HotKeyUtility.IsSystemLanguageKorean())
+                    {
+                        installInputSystemBtn.tooltip = "쉐이더 그래프 핫 키는 Input System을 의존합니다." +
+                                                        "따라서 해당 버튼을 누르면 Input System템을 설치합니다.";
+
+                        changeBothBtn.tooltip = "기존 프로젝트가 Old-Input System을 사용중이라면, Both를 눌러서 호환 시킬 수 있습니다.";
+                        addSettingsBtn.tooltip = "세팅 파일을 생성합니다.";
+
+#if ENABLE_SHADERGRAPH
+                        patchCodeBtn.tooltip = "쉐이더 그래프 코드에 패치를 합니다.";
+#else
+                        patchCodeBtn.tooltip = "쉐이더 그래프 패키지가 필요합니다.";
+#endif
+                    }
+                    else
+                    {
+                        installInputSystemBtn.tooltip = "ShaderGraph HotKey relies on the Input System." +
+                                                        "Therefore, if you press the corresponding button, the Input System system is installed.";
+
+                        changeBothBtn.tooltip =
+                            "If your existing project is using the Old-Input System, you can make it compatible by pressing Both.";
+                        addSettingsBtn.tooltip = "Create a settings file.";
+
+#if ENABLE_SHADERGRAPH
+                        patchCodeBtn.tooltip = "Patch the ShaderGraph code.";
+#else
+                        patchCodeBtn.tooltip = "ShaderGraph package is required.";
+#endif
+                    }
+                }
+            }
+
             void SetLanguage()
             {
                 switch (_hotKeySettings.Language)
@@ -584,9 +727,6 @@ namespace NKStudio.ShaderGraph.HotKey
 #if ENABLE_INPUT_SYSTEM
             void SetUp(ShaderGraphHotKeySettings settings)
             {
-                //다시 저장
-                EditorPrefs.SetInt("SGHKSettingsID", settings.GetInstanceID());
-
                 #region LanguageField
 
                 languageField.Init(settings.Language);
@@ -597,12 +737,10 @@ namespace NKStudio.ShaderGraph.HotKey
 
                 //초기화
                 startAtShowField.index = -1;
+                startAtShowField.choices.Clear();
 
-                if (settings.Language == ShaderGraphHotKeySettings.KLanguage.English)
-                    startAtShowField.choices = settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.English];
-                else
-                    startAtShowField.choices = settings.StartAtShowText[ShaderGraphHotKeySettings.KLanguage.한국어];
-
+                //셋업
+                startAtShowField.choices = ShaderGraphHotKeySettings.GetLanguageScript(settings.Language);
                 startAtShowField.index = (int) settings.StartAtShow;
 
                 #endregion
@@ -613,33 +751,16 @@ namespace NKStudio.ShaderGraph.HotKey
 
                 #endregion
             }
+#endif
 
-            void Reset()
-            {
-                //모두 초기화
-                languageField.Init(ShaderGraphHotKeySettings.KLanguage.English);
-                startAtShowField.choices = null;
-                startAtShowField.value = ShaderGraphHotKeySettings.KStartUp.Always.ToString();
-                autoOverride.value = false;
 
-                EditorPrefs.SetInt("SGHKSettingsID", -1);
-            }
-
+#if ENABLE_INPUT_SYSTEM
             void InstallSettings()
             {
                 const string path = "Assets/Settings/ShaderGraphHotKeySettingsAsset.asset";
 
-                if (File.Exists(path))
-                {
-                    Debug.Log("이미 파일이 있습니다.");
-                    return;
-                }
-
-                //파일을 가지고 있는지 체크
-                bool hasSettingsFile = File.Exists(path);
-
                 //가지고 있다면 에러 표시
-                if (hasSettingsFile)
+                if (HotKeyUtility.HasSettingsFile())
                 {
                     if (settingsField.value == null || _hotKeySettings == null) return;
                     string warningMsg = _hotKeySettings.Language == ShaderGraphHotKeySettings.KLanguage.English
@@ -662,18 +783,26 @@ namespace NKStudio.ShaderGraph.HotKey
                 _hotKeySettings.Language = ShaderGraphHotKeySettings.KLanguage.English; //영어로 설정
                 _hotKeySettings.StartAtShow = ShaderGraphHotKeySettings.KStartUp.Always; //컴파일 후 계속 켜짐 설정
                 _hotKeySettings.AutoShaderGraphOverride = false; //초기에는 해제
-                AssetDatabase.CreateAsset(_hotKeySettings, path);
                 settingsField.value = _hotKeySettings;
+                AssetDatabase.CreateAsset(_hotKeySettings, path);
 
                 //파일 위치 저장
-                int id = _hotKeySettings.GetInstanceID();
-                EditorPrefs.SetInt("SGHKSettingsID", id);
-                Debug.Log("생성되었습니다.");
-            }
+                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(_hotKeySettings.GetInstanceID(),
+                        out string guid,
+                        out long localId))
+                {
+                    EditorPrefs.SetString("SGHKSettingsID", guid);
+                }
 
+                Debug.Log(HotKeyUtility.IsSystemLanguageKorean()
+                    ? "세팅 파일이 생성되었습니다."
+                    : "The settings file has been created.");
+
+                AssetDatabase.Refresh();
+            }
+#endif
             void CreateInputAction()
             {
-
                 //파일이 있어야되는 경로
                 const string path = "Assets/Settings/Node Controls.inputactions";
                 const string kDefaultAssetLayout = "{}";
@@ -705,7 +834,14 @@ namespace NKStudio.ShaderGraph.HotKey
 
                 //파일 위치 저장
                 int id = _inputActionAsset.GetInstanceID();
-                EditorPrefs.SetInt("SGHKInputActionID", id);
+
+                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(_inputActionAsset.GetInstanceID(),
+                        out string guid,
+                        out long localId))
+                {
+                    EditorPrefs.SetString("SGHKInputActionID", guid);
+                }
+
 
                 //바인딩
                 inputActionField.value = _inputActionAsset;
@@ -714,21 +850,7 @@ namespace NKStudio.ShaderGraph.HotKey
                 AssetDatabase.Refresh();
 
                 Debug.Log("생성되었습니다.");
-
             }
-
-            void InstallDefine()
-            {
-                string defines =
-                    PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
-
-                if (defines.Contains(HotKeyDefine)) return;
-
-                string addHotKeyDefineToCurrentDefine = string.Concat(defines, ";", HotKeyDefine);
-                PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup,
-                    addHotKeyDefineToCurrentDefine);
-            }
-#endif
         }
 
         //패키지를 오버라이드 시킵니다.
@@ -1056,7 +1178,12 @@ namespace NKStudio.ShaderGraph.HotKey
 
         private static void ChangeInputSystemBoth()
         {
-            if (!EditorUtility.DisplayDialog("Warning", "진짜로 Both할거야?", "Yes", "No")) return;
+            if (HotKeyUtility.IsSystemLanguageKorean())
+            {
+                if (!EditorUtility.DisplayDialog("주의", "Input System을 Both로 변경하시겠습니까?", "네", "아니요")) return;
+            }
+            else if (!EditorUtility.DisplayDialog("Warning",
+                         "Are you sure you want to change the Input System to Both?", "Yes", "No")) return;
 
             EditorPlayerSettingHelpers.oldSystemBackendsEnabled = true;
             EditorPlayerSettingHelpers.oldSystemBackendsEnabled = true;
