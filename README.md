@@ -21,3 +21,21 @@
 |노드 이름|단축키|
 |------|---|
 |IntegerNode|숫자 0|
+|Vector1Node|숫자 1|
+|Vector2Node|숫자 2|
+|Vector3Node|숫자 3|
+|Vector4Node|숫자 4|
+|ColorNode|숫자 5|
+|SampleTexture2DNode|T|
+|UVNode|U|
+|AddNode|A|
+|SubtractNode|S|
+|MultiplyNode|M|
+|DivideNode|D|
+|OneMinusNode|O|
+|PowerNode|E|
+|LerpNode|L|
+|SplitNode|B|
+|SwizzleNode|Z|
+|NormalizeNode|N|
+|DotProductNode|. (점)|
