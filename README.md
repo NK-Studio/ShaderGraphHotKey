@@ -11,7 +11,7 @@
 ### 유니티 패키지 -> [UnityPackage](https://github.com/NK-Studio/ShaderGraphHotKey/releases) 다운로드
 
 # 기타
-[![미리보기](preview.png)]
+![미리보기](preview.png)
 
 현재 1.x.x으로 올라온 패키지는 Lite 버전이며 추후에 원하는 단축키로 변경할 수 있도록 인풋 매니저 또한 제공 준비중입니다.
 
