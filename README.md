@@ -28,7 +28,7 @@
 |ColorNode|숫자 5|
 |SampleTexture2DNode|T|
 |UVNode|U|
-|AddNode|A|
+|AddNode|V|
 |SubtractNode|S|
 |MultiplyNode|M|
 |DivideNode|D|
@@ -42,3 +42,6 @@
 |DotProductNode|. (점)|
 |Register Variable|R|
 |Get Variable|G|
+
+단축키를 변경할 때 A,F,O키를 조심하십시오.
+유니티 고유 단축키여서.. 충돌 문제 발생.
