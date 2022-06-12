@@ -5,7 +5,9 @@
 이 에셋은 유니티 쉐이더 그래프에 엠플리파이 쉐이더와 동일하거나 비슷한 단축키 경험을 제공합니다.
 
 # 유니티 호환 버전
-### 2021.2 and above
+### 2021.2 and 2021.3 LTS 권장
+
+2022.1에서는 Register Node가 불안정한 곳으로 식별
 
 # 다운로드
 ### 유니티 패키지 -> [UnityPackage](https://github.com/NK-Studio/ShaderGraphHotKey/releases) 다운로드
