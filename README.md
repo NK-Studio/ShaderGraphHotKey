@@ -24,7 +24,8 @@
 ![HotKeyPreview](https://github.com/NK-Studio/ShaderGraphHotKey/blob/main/hotkey.gif)
 이 에셋의 메인 기능인 단축키 기능을 제공합니다.
 
-
+![미리보기](hint.png)
+단축키가 적용된 노드들은 검색했을 때 힌트가 표시됩니다.
 
 # 단축키 표
 |노드 이름|단축키|
