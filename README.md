@@ -1,4 +1,4 @@
-# ShaderGraphHotKey 1.3.2
+# ShaderGraphHotKey 1.4.0
 유니티 외장 플러그인 중 엠플리파이 쉐이더는 단축키 기능을 제공하고 있으며, 이는 매우 편한 기능입니다.
 유니티에서 제공하는 쉐이더 그래프는 아쉽게도 단축키를 제공하지 않고 있는데요.
 
@@ -20,12 +20,16 @@
 사용법은 PDF로 유니티 패키지에 수록되어 있으며 영상강의는 추후에 진행하도록 하겠습니다.
 
 # 기능
-## HotKey (단축키)
-![HotKeyPreview](https://github.com/NK-Studio/ShaderGraphHotKey/blob/main/hotkey.gif)
+### HotKey (단축키)
+![HotKeyPreview](https://github.com/NK-Studio/ShaderGraphHotKey/blob/main/hotkey.gif)   
 이 에셋의 메인 기능인 단축키 기능을 제공합니다.
 
-![미리보기](hint.png)
+![미리보기](hintPreview.png)   
 단축키가 적용된 노드들은 검색했을 때 힌트가 표시됩니다.
+
+### Register Node & Get Variable Node
+![미리보기](registerNode.png)   
+노드를 변수처럼 저장하여 원하는 위치에서 노드를 불러와서 사용할 수 있습니다.
 
 # 단축키 표
 |노드 이름|단축키|
