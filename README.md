@@ -27,7 +27,7 @@
 ![미리보기](hintPreview.png)   
 단축키가 적용된 노드들은 검색했을 때 힌트가 표시됩니다.
 
-### Register Node & Get Variable Node
+### Register Node & Get Variable Node (노드 로컬 변수 & 불러오기)
 ![미리보기](registerNode.png)   
 노드를 변수처럼 저장하여 원하는 위치에서 노드를 불러와서 사용할 수 있습니다.
 
