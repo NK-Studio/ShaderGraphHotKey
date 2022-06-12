@@ -21,7 +21,7 @@
 
 # 기능
 ### HotKey (단축키)
-![HotKeyPreview](https://github.com/NK-Studio/ShaderGraphHotKey/blob/main/hotkey.gif)   
+![HotKeyPreview](hotkey.gif)   
 이 에셋의 메인 기능인 단축키 기능을 제공합니다.
 
 ![미리보기](hintPreview.png)   
@@ -30,6 +30,10 @@
 ### Register Node & Get Variable Node (노드 로컬 변수 & 불러오기)
 ![미리보기](registerNode.png)   
 노드를 변수처럼 저장하여 원하는 위치에서 노드를 불러와서 사용할 수 있습니다.
+
+### Screenshot (스크린 샷)
+![미리보기](Screenshot.gif)   
+쉐이더 그래프에 추가된 Screenshot 버튼을 클릭하여 노드를 스크린 샷 할 수 있습니다.
 
 # 단축키 표
 |노드 이름|단축키|
