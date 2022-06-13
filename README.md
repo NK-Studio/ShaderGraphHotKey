@@ -57,7 +57,6 @@
 |SwizzleNode|Z|
 |NormalizeNode|N|
 |DotProductNode|. (점)|
-|DotProductNode|. (점)|
 |Register Variable|R|
 |Get Variable|G|
 
